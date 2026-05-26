@@ -70,10 +70,14 @@ public class AesEncryptionConverter implements AttributeConverter<String, String
     }
 
     private byte[] decodeKey(String configuredKey) {
+        byte[] rawBytes = configuredKey.getBytes(StandardCharsets.UTF_8);
+        if (rawBytes.length == 32) {
+            return rawBytes;
+        }
         try {
             return Base64.getDecoder().decode(configuredKey);
         } catch (IllegalArgumentException ignored) {
-            return configuredKey.getBytes(StandardCharsets.UTF_8);
+            return rawBytes;
         }
     }
 }

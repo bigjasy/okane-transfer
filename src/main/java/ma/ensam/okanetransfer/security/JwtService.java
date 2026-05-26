@@ -98,10 +98,14 @@ public class JwtService {
     }
 
     private byte[] decodeSecret(String configuredSecret) {
+        byte[] rawBytes = configuredSecret.getBytes(StandardCharsets.UTF_8);
+        if (rawBytes.length >= 32) {
+            return rawBytes;
+        }
         try {
             return Base64.getDecoder().decode(configuredSecret);
         } catch (IllegalArgumentException ignored) {
-            return configuredSecret.getBytes(StandardCharsets.UTF_8);
+            return rawBytes;
         }
     }
 }

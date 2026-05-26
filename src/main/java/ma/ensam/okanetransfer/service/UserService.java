@@ -66,7 +66,7 @@ public class UserService {
             User actor
     ) {
         requireAny(actor, Role.ROLE_ADMIN, Role.ROLE_MANAGER);
-        Long effectiveAgencyId = actor instanceof Manager manager ? manager.getAgencyId() : agencyId;
+        Long effectiveAgencyId = actor instanceof Manager manager ? requireManagerAgency(manager) : agencyId;
         List<User> filtered = userRepository.findAll(withFilters(role, status))
                 .stream()
                 .filter(user -> matchesAgency(user, effectiveAgencyId))
@@ -95,6 +95,13 @@ public class UserService {
         if (actor.getRole() == Role.ROLE_MANAGER && request.role() != Role.ROLE_AGENT) {
             throw new ForbiddenOperationException("Managers can create agents only");
         }
+        Long effectiveAgencyId = request.agencyId();
+        if (actor instanceof Manager manager) {
+            effectiveAgencyId = requireManagerAgency(manager);
+            if (request.agencyId() != null && !effectiveAgencyId.equals(request.agencyId())) {
+                throw new ForbiddenOperationException("Managers can create agents only in their own agency");
+            }
+        }
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new BusinessException("EMAIL_ALREADY_EXISTS", "Email is already used", HttpStatus.CONFLICT);
         }
@@ -106,7 +113,7 @@ public class UserService {
         user.setPhoneNumber(request.phoneNumber());
         user.setPasswordHash(passwordEncoder.encode(generateTemporaryPassword()));
         user.setStatus(UserStatus.ACTIVE);
-        assignAgency(user, request.agencyId());
+        assignAgency(user, effectiveAgencyId);
 
         User saved = userRepository.save(user);
         auditService.record(AuditAction.USER_CREATED, actor, "User", String.valueOf(saved.getId()), ipAddress, userAgent, null);
@@ -170,6 +177,13 @@ public class UserService {
         }
         if (role == Role.ROLE_CLIENT) {
             throw new BusinessException("INVALID_ROLE_CHANGE", "Client role changes require client account migration", HttpStatus.BAD_REQUEST);
+        }
+        if (role != concreteRole(user)) {
+            throw new BusinessException(
+                    "ROLE_MIGRATION_REQUIRED",
+                    "Changing role requires migrating the user subtype, not only updating the role field",
+                    HttpStatus.UNPROCESSABLE_ENTITY
+            );
         }
         user.assignRole(role);
         return UserSummaryResponse.from(userRepository.save(user));
@@ -240,6 +254,26 @@ public class UserService {
         if (user instanceof Agent agent) {
             agent.setAgencyId(agencyId);
         }
+    }
+
+    private Long requireManagerAgency(Manager manager) {
+        if (manager.getAgencyId() == null) {
+            throw new ForbiddenOperationException("Manager is not assigned to an agency");
+        }
+        return manager.getAgencyId();
+    }
+
+    private Role concreteRole(User user) {
+        if (user instanceof Admin) {
+            return Role.ROLE_ADMIN;
+        }
+        if (user instanceof Manager) {
+            return Role.ROLE_MANAGER;
+        }
+        if (user instanceof Agent) {
+            return Role.ROLE_AGENT;
+        }
+        return Role.ROLE_CLIENT;
     }
 
     private User newUserForRole(Role role) {

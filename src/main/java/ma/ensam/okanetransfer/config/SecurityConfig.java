@@ -46,12 +46,16 @@ public class SecurityConfig {
                                 AntPathRequestMatcher.antMatcher("/api/v1/auth/register-client"),
                                 AntPathRequestMatcher.antMatcher("/api/v1/auth/login"),
                                 AntPathRequestMatcher.antMatcher("/api/v1/auth/verify-otp"),
-                                AntPathRequestMatcher.antMatcher("/api/v1/auth/refresh")
+                                AntPathRequestMatcher.antMatcher("/api/v1/auth/refresh"),
+                                AntPathRequestMatcher.antMatcher("/api/v1/otp/request"),
+                                AntPathRequestMatcher.antMatcher("/api/v1/otp/verify")
                         ).permitAll()
                         .requestMatchers(
                                 AntPathRequestMatcher.antMatcher("/swagger-ui/**"),
                                 AntPathRequestMatcher.antMatcher("/v3/api-docs/**")
                         ).permitAll()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/otp/enable-2fa")).authenticated()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/otp/disable-2fa")).authenticated()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/users/**")).authenticated()
                         .anyRequest().authenticated()
                 )
