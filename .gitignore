@@ -39,4 +39,5 @@ build/
 .DS_Store
 
 ### Important
-src/main/resources/application.properties
+src/main/resources/application.properties.idea/
+.mvn/wrapper/
