@@ -41,3 +41,5 @@ build/
 ### Important
 src/main/resources/application.properties.idea/
 .mvn/wrapper/
+mvnw
+mvnw.cmd
