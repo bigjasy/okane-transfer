@@ -121,7 +121,7 @@ public class TransferService {
         transfer.setExchangeRateApplied(simulation.getExchangeRate());
         transfer.setReceivedAmount(simulation.getReceivedAmount());
         transfer.setChannel(request.getChannel());
-        transfer.setStatus(TransferStatus.PENDING_PAYMENT); // Règle 15.1
+        transfer.setStatus(TransferStatus.PENDING_PAYMENT);
         transfer.setExpiresAt(LocalDateTime.now().plusDays(30)); // Expiration dans 30 jours
 
         Transfer savedTransfer = transferRepository.save(transfer);
