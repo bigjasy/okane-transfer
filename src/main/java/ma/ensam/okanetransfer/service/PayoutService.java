@@ -19,6 +19,7 @@ import ma.ensam.okanetransfer.repository.CashMovementRepository;
 import ma.ensam.okanetransfer.repository.CashRegisterRepository;
 import ma.ensam.okanetransfer.repository.TransferPaymentRepository;
 import ma.ensam.okanetransfer.repository.TransferRepository;
+import ma.ensam.okanetransfer.repository.UserRepository;
 
 import java.time.LocalDateTime;
 
@@ -31,21 +32,26 @@ public class PayoutService {
     private final CashRegisterRepository cashRegisterRepository;
     private final CashMovementRepository cashMovementRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
 
     public PayoutService(TransferRepository transferRepository, 
                          TransferPaymentRepository transferPaymentRepository,
                          CashRegisterRepository cashRegisterRepository, 
                          CashMovementRepository cashMovementRepository,
-                         PasswordEncoder passwordEncoder) {
+                         PasswordEncoder passwordEncoder,
+                         UserRepository userRepository) {
         this.transferRepository = transferRepository;
         this.transferPaymentRepository = transferPaymentRepository;
         this.cashRegisterRepository = cashRegisterRepository;
         this.cashMovementRepository = cashMovementRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userRepository = userRepository;
     }
 
-    public PayoutResponse confirmPayout(PayoutConfirmRequest request, Long agentId) {
-        // 1. Récupération et vérification de l'état du transfert
+    public PayoutResponse confirmPayout(PayoutConfirmRequest request, String agentEmail) {
+        Agent agent = (Agent) userRepository.findByEmailIgnoreCase(agentEmail)
+                .orElseThrow(() -> new BusinessException("Agent introuvable"));
+
         Transfer transfer = transferRepository.findByReference(request.getTransferReference())
                 .orElseThrow(() -> new BusinessException("Transfert introuvable."));
 
@@ -59,49 +65,34 @@ public class PayoutService {
             throw new BusinessException("Ce transfert a expiré et ne peut plus être payé.");
         }
 
-        // 2. Vérification sécurisée du code de retrait (Le hash en base vs le code en clair saisi)
         if (!passwordEncoder.matches(request.getWithdrawalCode(), transfer.getWithdrawalCodeHash())) {
             throw new BusinessException("Code de retrait invalide.");
         }
 
-        // 3. Vérification de la caisse de l'agent
-        CashRegister register = cashRegisterRepository.findByAgentIdAndStatus(agentId, CashRegisterStatus.OPEN)
+        CashRegister register = cashRegisterRepository.findByAgentIdAndStatus(agent.getId(), CashRegisterStatus.OPEN)
                 .orElseThrow(() -> new BusinessException("Vous devez avoir une caisse ouverte pour effectuer un paiement."));
 
-        // Vérification de la devise de la caisse vs la devise cible du transfert
         if (!register.getCurrency().getCode().equals(transfer.getTargetCurrency().getCode())) {
             throw new BusinessException("La devise de votre caisse ne correspond pas à la devise de réception du transfert.");
         }
 
-        // Vérification de la liquidité (Fonds suffisants ?)
         if (register.getCurrentBalance().compareTo(transfer.getReceivedAmount()) < 0) {
             throw new BusinessException("Fonds insuffisants dans la caisse pour payer ce transfert.");
         }
 
-        // 4. Exécution du paiement
         transfer.setStatus(TransferStatus.PAID);
         transfer.setPaidAt(LocalDateTime.now());
         transferRepository.save(transfer);
 
-        // Mappage de l'agent factice
-        Agent agent = new Agent();
-        agent.setId(agentId);
-
-        // 5. Création de la trace de paiement (TransferPayment)
         TransferPayment payment = new TransferPayment();
         payment.setTransfer(transfer);
         payment.setPaidByAgent(agent);
         payment.setPaidAtAgency(register.getAgency());
         payment.setBeneficiaryIdentityType(request.getIdentityType());
-        
-        // Grâce au @Convert(converter = AesEncryptionConverter.class) dans l'entité,
-        // JPA va automatiquement chiffrer cette valeur en base. On lui passe donc la valeur en clair.
         payment.setBeneficiaryIdentityNumberEncrypted(request.getIdentityNumber());
         payment.setPaidAmount(transfer.getReceivedAmount());
-        
         transferPaymentRepository.save(payment);
 
-        // 6. Impact sur la caisse : Mouvement CASH_OUT
         CashMovement movement = new CashMovement();
         movement.setCashRegister(register);
         movement.setType(CashMovementType.CASH_OUT);
@@ -113,11 +104,9 @@ public class PayoutService {
 
         cashMovementRepository.save(movement);
 
-        // Mise à jour du solde
         register.setCurrentBalance(register.getCurrentBalance().subtract(transfer.getReceivedAmount()));
         cashRegisterRepository.save(register);
 
-        // 7. Retour de la réponse au Frontend
         PayoutResponse response = new PayoutResponse();
         response.setTransferReference(transfer.getReference());
         response.setStatus(transfer.getStatus());

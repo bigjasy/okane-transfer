@@ -36,7 +36,7 @@ public class Beneficiary {
     @Column(name = "identity_type", nullable = false, length = 30)
     private IdentityType identityType;
 
-    // Chiffrement transparent requis par les exigences de conformité et sécurité du projet
+    // Chiffrement transparent requis par les exigences de conformité et sécurité
     @Convert(converter = AesEncryptionConverter.class)
     @Column(name = "identity_number_encrypted", nullable = false, length = 255)
     private String identityNumberEncrypted;

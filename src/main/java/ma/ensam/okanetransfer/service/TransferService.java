@@ -8,7 +8,6 @@ import ma.ensam.okanetransfer.domain.agency.Corridor;
 import ma.ensam.okanetransfer.domain.finance.CashMovement;
 import ma.ensam.okanetransfer.domain.finance.CashRegister;
 import ma.ensam.okanetransfer.domain.finance.Commission;
-import ma.ensam.okanetransfer.domain.referential.Country;
 import ma.ensam.okanetransfer.domain.referential.Currency;
 import ma.ensam.okanetransfer.domain.transfer.Beneficiary;
 import ma.ensam.okanetransfer.domain.transfer.Transfer;
@@ -42,12 +41,14 @@ public class TransferService {
     private final CashMovementRepository cashMovementRepository;
     private final CommissionRepository commissionRepository;
     private final FeeCalculationService feeCalculationService;
+    private final UserRepository userRepository;
 
     public TransferService(TransferRepository transferRepository, AgencyRepository agencyRepository,
                            CorridorRepository corridorRepository, CurrencyRepository currencyRepository,
                            ClientRepository clientRepository, BeneficiaryRepository beneficiaryRepository,
                            CashRegisterRepository cashRegisterRepository, CashMovementRepository cashMovementRepository,
-                           CommissionRepository commissionRepository, FeeCalculationService feeCalculationService) {
+                           CommissionRepository commissionRepository, FeeCalculationService feeCalculationService,
+                           UserRepository userRepository) {
         this.transferRepository = transferRepository;
         this.agencyRepository = agencyRepository;
         this.corridorRepository = corridorRepository;
@@ -58,25 +59,25 @@ public class TransferService {
         this.cashMovementRepository = cashMovementRepository;
         this.commissionRepository = commissionRepository;
         this.feeCalculationService = feeCalculationService;
+        this.userRepository = userRepository;
     }
 
-    // 1. Création du transfert (Statut: PENDING_PAYMENT)
-    public TransferResponse createTransfer(TransferCreateRequest request, Long agentId) {
-        // Vérification 1 : L'agence source est-elle active ?
+    public TransferResponse createTransfer(TransferCreateRequest request, String agentEmail) {
+        Agent agent = (Agent) userRepository.findByEmailIgnoreCase(agentEmail)
+                .orElseThrow(() -> new BusinessException("Agent introuvable avec cet email"));
+
         Agency sourceAgency = agencyRepository.findById(request.getSourceAgencyId())
                 .orElseThrow(() -> new BusinessException("Agence source introuvable"));
         if (sourceAgency.getStatus() != AgencyStatus.ACTIVE) {
             throw new BusinessException("L'agence source n'est pas active.");
         }
 
-        // Vérification 2 : Le corridor est-il actif ?
         Corridor corridor = corridorRepository.findById(request.getCorridorId())
                 .orElseThrow(() -> new BusinessException("Corridor introuvable"));
         if (!corridor.isActive()) {
             throw new BusinessException("Ce corridor de transfert est actuellement inactif.");
         }
 
-        // On simule les frais exacts via le service déjà codé
         FeeSimulationRequest simReq = new FeeSimulationRequest();
         simReq.setCorridorId(corridor.getId());
         simReq.setSourceCurrency(request.getSourceCurrency());
@@ -84,12 +85,9 @@ public class TransferService {
         simReq.setAmount(request.getAmount());
         FeeSimulationResponse simulation = feeCalculationService.simulateFees(simReq);
 
-        // Récupération des acteurs
         Client sender = clientRepository.findById(request.getSenderClientId())
                 .orElseThrow(() -> new BusinessException("Expéditeur introuvable"));
-        
-        // Note : On suppose ici que le bénéficiaire existe déjà. S'il est nouveau, il faudra le créer.
-        Beneficiary beneficiary = beneficiaryRepository.findById(request.getBeneficiary().getId()) // ID à ajouter dans le DTO si besoin
+        Beneficiary beneficiary = beneficiaryRepository.findById(request.getBeneficiary().getId()) 
                 .orElseThrow(() -> new BusinessException("Bénéficiaire introuvable"));
 
         Agency destAgency = agencyRepository.findById(request.getDestinationAgencyId())
@@ -97,10 +95,9 @@ public class TransferService {
         Currency sourceCurrency = currencyRepository.findByCode(request.getSourceCurrency()).orElseThrow();
         Currency targetCurrency = currencyRepository.findByCode(request.getTargetCurrency()).orElseThrow();
 
-        // Construction du transfert
         Transfer transfer = new Transfer();
         transfer.setReference(CodeGenerator.generateReference());
-        transfer.setWithdrawalCodeHash("PENDING"); // Sera écrasé à la confirmation
+        transfer.setWithdrawalCodeHash("PENDING");
         transfer.setSender(sender);
         transfer.setBeneficiary(beneficiary);
         transfer.setSourceAgency(sourceAgency);
@@ -109,24 +106,17 @@ public class TransferService {
         transfer.setDestinationCountry(corridor.getDestinationCountry());
         transfer.setSourceCurrency(sourceCurrency);
         transfer.setTargetCurrency(targetCurrency);
-        
-        // Mappage d'un Agent factice pour l'exemple (à récupérer depuis SecurityContext dans le Controller)
-        Agent agent = new Agent(); 
-        agent.setId(agentId);
         transfer.setCreatedByAgent(agent);
-
-        // Données financières
         transfer.setSentAmount(simulation.getAmount());
         transfer.setFeeAmount(simulation.getFeeAmount());
         transfer.setExchangeRateApplied(simulation.getExchangeRate());
         transfer.setReceivedAmount(simulation.getReceivedAmount());
         transfer.setChannel(request.getChannel());
         transfer.setStatus(TransferStatus.PENDING_PAYMENT);
-        transfer.setExpiresAt(LocalDateTime.now().plusDays(30)); // Expiration dans 30 jours
+        transfer.setExpiresAt(LocalDateTime.now().plusDays(30));
 
         Transfer savedTransfer = transferRepository.save(transfer);
 
-        // Sauvegarde des commissions
         Commission commission = new Commission();
         commission.setTransfer(savedTransfer);
         commission.setAgency(sourceAgency);
@@ -138,8 +128,7 @@ public class TransferService {
         return mapToResponse(savedTransfer);
     }
 
-    // 2. Confirmation du paiement à l'envoi (Statut: AVAILABLE)
-    public String confirmPaymentAtSending(String reference, Long agentId) {
+    public String confirmPaymentAtSending(String reference, String agentEmail) {
         Transfer transfer = transferRepository.findByReference(reference)
                 .orElseThrow(() -> new BusinessException("Transfert introuvable"));
 
@@ -147,39 +136,34 @@ public class TransferService {
             throw new BusinessException("Ce transfert n'est pas en attente de paiement.");
         }
 
-        // Vérification de la caisse de l'agent
-        CashRegister register = cashRegisterRepository.findByAgentIdAndStatus(agentId, CashRegisterStatus.OPEN)
+        Agent agent = (Agent) userRepository.findByEmailIgnoreCase(agentEmail)
+                .orElseThrow(() -> new BusinessException("Agent introuvable"));
+
+        CashRegister register = cashRegisterRepository.findByAgentIdAndStatus(agent.getId(), CashRegisterStatus.OPEN)
                 .orElseThrow(() -> new BusinessException("L'agent doit avoir une caisse ouverte pour encaisser."));
 
-        // Règle métier : Génération du code de retrait UNIQUEMENT après confirmation
         String plainWithdrawalCode = CodeGenerator.generateWithdrawalCode();
         transfer.setWithdrawalCodeHash(CodeGenerator.hashWithdrawalCode(plainWithdrawalCode));
         transfer.setStatus(TransferStatus.AVAILABLE);
 
-        // Règle 15.3 : Création confirmée = Mouvement CASH_IN
         CashMovement movement = new CashMovement();
         movement.setCashRegister(register);
         movement.setType(CashMovementType.CASH_IN);
-        // L'agent encaisse le montant + les frais
         movement.setAmount(transfer.getSentAmount().add(transfer.getFeeAmount()));
         movement.setCurrency(transfer.getSourceCurrency());
         movement.setTransfer(transfer);
         movement.setReason("Encaissement pour création du transfert " + reference);
-        movement.setCreatedBy(transfer.getCreatedByAgent()); // L'agent
+        movement.setCreatedBy(agent);
 
         cashMovementRepository.save(movement);
         
-        // Mise à jour du solde de la caisse
         register.setCurrentBalance(register.getCurrentBalance().add(movement.getAmount()));
         cashRegisterRepository.save(register);
-
         transferRepository.save(transfer);
 
-        // On retourne le code en clair UNE SEULE FOIS pour l'afficher à l'agent
         return plainWithdrawalCode;
     }
 
-    // Mapper utilitaire
     private TransferResponse mapToResponse(Transfer transfer) {
         TransferResponse res = new TransferResponse();
         res.setId(transfer.getId());

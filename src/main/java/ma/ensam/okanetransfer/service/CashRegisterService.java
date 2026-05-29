@@ -47,9 +47,7 @@ public class CashRegisterService {
         this.currencyRepository = currencyRepository;
     }
 
-    // 1. Ouverture de la caisse
     public CashRegisterResponse openRegister(CashRegisterOpenRequest request) {
-        // Règle métier : Un agent ne peut avoir qu'une seule caisse ouverte à la fois
         Optional<CashRegister> existingOpenRegister = cashRegisterRepository
                 .findByAgentIdAndStatus(request.getAgentId(), CashRegisterStatus.OPEN);
         
@@ -78,8 +76,7 @@ public class CashRegisterService {
         return mapToResponse(savedRegister);
     }
 
-    // 2. Clôture de la caisse et gestion des écarts
-    public CashRegisterResponse closeRegister(Long cashRegisterId, CashClosingRequest request, Long closedById) {
+    public CashRegisterResponse closeRegister(Long cashRegisterId, CashClosingRequest request, String userEmail) {
         CashRegister register = cashRegisterRepository.findById(cashRegisterId)
                 .orElseThrow(() -> new BusinessException("Caisse introuvable"));
 
@@ -90,14 +87,12 @@ public class CashRegisterService {
         BigDecimal expectedBalance = register.getCurrentBalance();
         BigDecimal countedAmount = request.getCountedAmount();
         
-        // Calcul de l'écart : Si le montant compté est différent du solde théorique
         if (expectedBalance.compareTo(countedAmount) != 0) {
             BigDecimal difference = countedAmount.subtract(expectedBalance);
             
-            User closedBy = userRepository.findById(closedById)
+            User closedBy = userRepository.findByEmailIgnoreCase(userEmail)
                 .orElseThrow(() -> new BusinessException("Utilisateur introuvable"));
 
-            // Génération d'un mouvement d'écart (CLOSING_DIFFERENCE)
             CashMovement differenceMovement = new CashMovement();
             differenceMovement.setCashRegister(register);
             differenceMovement.setType(CashMovementType.CLOSING_DIFFERENCE);
@@ -107,8 +102,6 @@ public class CashRegisterService {
             differenceMovement.setCreatedBy(closedBy);
             
             cashMovementRepository.save(differenceMovement);
-            
-            // Mise à jour du solde pour correspondre à la réalité physique
             register.setCurrentBalance(countedAmount);
         }
 
@@ -120,7 +113,6 @@ public class CashRegisterService {
         return mapToResponse(savedRegister);
     }
 
-    // Mapper utilitaire pour convertir l'entité en DTO
     private CashRegisterResponse mapToResponse(CashRegister register) {
         CashRegisterResponse response = new CashRegisterResponse();
         response.setId(register.getId());
