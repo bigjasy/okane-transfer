@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ma.ensam.okanetransfer.domain.agency.Agency;
 import ma.ensam.okanetransfer.domain.referential.Country;
+import ma.ensam.okanetransfer.domain.user.User;
 import ma.ensam.okanetransfer.domain.user.Agent;
 import ma.ensam.okanetransfer.domain.user.Manager;
 import ma.ensam.okanetransfer.dto.agency.AgencyRequest;
@@ -86,10 +87,16 @@ public class AgencyService {
     public AgencyResponse assignAgent(Long agencyId, Long agentId) {
         Agency agency = agencyRepository.findById(agencyId)
                 .orElseThrow(() -> new BusinessException("Agence introuvable."));
-        Agent agent = (Agent) userRepository.findById(agentId)
-                .orElseThrow(() -> new BusinessException("Agent introuvable."));
+        User user = userRepository.findById(agentId)
+                .orElseThrow(() -> new BusinessException("Utilisateur introuvable."));
+                
+        if (!(user instanceof Agent)) {
+            throw new BusinessException("L'utilisateur spécifié n'est pas un Agent.");
+        }
 
-        agent.setAgency(agency);
+        Agent agent = (Agent) user;
+        agent.setAgencyId(agency.getId()); 
+        
         userRepository.save(agent);
         return mapToResponse(agency);
     }
@@ -97,10 +104,17 @@ public class AgencyService {
     public AgencyResponse assignManager(Long agencyId, Long managerId) {
         Agency agency = agencyRepository.findById(agencyId)
                 .orElseThrow(() -> new BusinessException("Agence introuvable."));
-        Manager manager = (Manager) userRepository.findById(managerId)
-                .orElseThrow(() -> new BusinessException("Manager introuvable."));
+        
+        User user = userRepository.findById(managerId)
+                .orElseThrow(() -> new BusinessException("Utilisateur introuvable."));
 
-        manager.setAgency(agency);
+        if (!(user instanceof Manager)) {
+            throw new BusinessException("L'utilisateur spécifié n'est pas un Manager.");
+        }
+
+        Manager manager = (Manager) user;
+        manager.setAgencyId(agency.getId()); 
+        
         userRepository.save(manager);
         return mapToResponse(agency);
     }
