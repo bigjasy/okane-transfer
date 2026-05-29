@@ -11,6 +11,8 @@ import ma.ensam.okanetransfer.dto.finance.CashRegisterOpenRequest;
 import ma.ensam.okanetransfer.dto.finance.CashRegisterResponse;
 import ma.ensam.okanetransfer.service.CashRegisterService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/cash-registers")
 public class CashRegisterController {
@@ -22,7 +24,7 @@ public class CashRegisterController {
     }
 
     @PostMapping("/open")
-    public ResponseEntity<CashRegisterResponse> openRegister(@RequestBody CashRegisterOpenRequest request) {
+    public ResponseEntity<CashRegisterResponse> openRegister(@Valid @RequestBody CashRegisterOpenRequest request) {
         CashRegisterResponse response = cashRegisterService.openRegister(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -30,7 +32,7 @@ public class CashRegisterController {
     @PostMapping("/{id}/close")
     public ResponseEntity<CashRegisterResponse> closeRegister(
             @PathVariable Long id, 
-            @RequestBody CashClosingRequest request,
+            @Valid @RequestBody CashClosingRequest request,
             @AuthenticationPrincipal UserDetails currentUser) {
         
         String userEmail = currentUser.getUsername();

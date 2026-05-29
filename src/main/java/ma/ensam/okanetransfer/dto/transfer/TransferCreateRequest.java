@@ -1,17 +1,40 @@
 package ma.ensam.okanetransfer.dto.transfer;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import ma.ensam.okanetransfer.enums.TransferChannel;
 
 public class TransferCreateRequest {
+@NotNull(message = "L'ID de l'expéditeur est obligatoire")
     private Long senderClientId;
+    
+    @Valid // Déclenche la validation en cascade sur l'objet imbriqué
+    @NotNull(message = "Les informations du bénéficiaire sont obligatoires")
     private BeneficiaryRequest beneficiary;
+    
+    @NotNull(message = "L'agence source est obligatoire")
     private Long sourceAgencyId;
+    
+    @NotNull(message = "L'agence de destination est obligatoire")
     private Long destinationAgencyId;
+    
+    @NotNull(message = "Le corridor est obligatoire")
     private Long corridorId;
+    
+    @NotBlank(message = "La devise source est obligatoire")
     private String sourceCurrency;
+    
+    @NotBlank(message = "La devise cible est obligatoire")
     private String targetCurrency;
+    
+    @NotNull(message = "Le montant est obligatoire")
+    @Positive(message = "Le montant du transfert doit être strictement positif")
     private BigDecimal amount;
+    
+    @NotNull(message = "Le canal de transfert est obligatoire")
     private TransferChannel channel;
 
     // Getters and Setters

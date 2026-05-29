@@ -1,11 +1,22 @@
 package ma.ensam.okanetransfer.dto.finance;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
 
 public class CashRegisterOpenRequest {
+    @NotNull(message = "L'ID de l'agent est obligatoire")
     private Long agentId;
+    
+    @NotNull(message = "L'ID de l'agence est obligatoire")
     private Long agencyId;
+    
+    @NotBlank(message = "La devise est obligatoire")
     private String currencyCode;
+    
+    @NotNull(message = "Le solde d'ouverture est obligatoire")
+    @PositiveOrZero(message = "Le solde d'ouverture ne peut pas être négatif")
     private BigDecimal openingBalance;
 
     // Getters and Setters

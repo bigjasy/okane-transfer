@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 import ma.ensam.okanetransfer.dto.agency.AgencyRequest;
 import ma.ensam.okanetransfer.dto.agency.AgencyResponse;
 import ma.ensam.okanetransfer.enums.AgencyStatus;
@@ -37,7 +38,7 @@ public class AgencyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(agencyService.createAgency(request));
     }
 
-    @getMapping("/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<AgencyResponse> getAgencyById(@PathVariable Long id) {
         return ResponseEntity.ok(agencyService.getAgencyById(id));
     }
@@ -47,7 +48,7 @@ public class AgencyController {
         return ResponseEntity.ok(agencyService.updateAgency(id, request));
     }
 
-    @patchMapping("/{id}/status")
+    @PatchMapping("/{id}/status")
     public ResponseEntity<AgencyResponse> updateStatus(@PathVariable Long id, @RequestParam AgencyStatus status) {
         return ResponseEntity.ok(agencyService.updateStatus(id, status));
     }

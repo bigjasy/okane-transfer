@@ -10,6 +10,8 @@ import ma.ensam.okanetransfer.dto.transfer.TransferCreateRequest;
 import ma.ensam.okanetransfer.dto.transfer.TransferResponse;
 import ma.ensam.okanetransfer.service.TransferService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/transfers")
 public class TransferController {
@@ -22,7 +24,7 @@ public class TransferController {
 
     @PostMapping
     public ResponseEntity<TransferResponse> createTransfer(
-            @RequestBody TransferCreateRequest request,
+            @Valid @RequestBody TransferCreateRequest request,
             @AuthenticationPrincipal UserDetails currentUser) {
         
         // On récupère l'email de l'agent connecté de manière standard
@@ -34,7 +36,7 @@ public class TransferController {
 
     @PostMapping("/{reference}/confirm-payment")
     public ResponseEntity<String> confirmPaymentAtSending(
-            @PathVariable String reference,
+            @Valid @PathVariable String reference,
             @AuthenticationPrincipal UserDetails currentUser) {
         
         String agentEmail = currentUser.getUsername();

@@ -9,6 +9,8 @@ import ma.ensam.okanetransfer.dto.transfer.PayoutConfirmRequest;
 import ma.ensam.okanetransfer.dto.transfer.PayoutResponse;
 import ma.ensam.okanetransfer.service.PayoutService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/payouts")
 public class PayoutController {
@@ -21,7 +23,7 @@ public class PayoutController {
 
     @PostMapping("/confirm")
     public ResponseEntity<PayoutResponse> confirmPayout(
-            @RequestBody PayoutConfirmRequest request,
+            @Valid @RequestBody PayoutConfirmRequest request,
             @AuthenticationPrincipal UserDetails currentUser) {
         
         String agentEmail = currentUser.getUsername();
