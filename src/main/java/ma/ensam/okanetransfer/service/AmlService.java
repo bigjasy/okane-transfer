@@ -107,7 +107,10 @@ public class AmlService {
     public AmlCheckTransferResponse checkTransfer(String transferReference) {
         Transfer transfer = transferRepository.findByReference(transferReference)
                 .orElseThrow(() -> new ResourceNotFoundException("Transfer", transferReference));
+        return checkTransfer(transfer);
+    }
 
+    public AmlCheckTransferResponse checkTransfer(Transfer transfer) {
         List<AmlAlert> alerts = new ArrayList<>();
         BigDecimal threshold = resolveThreshold();
 

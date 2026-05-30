@@ -8,6 +8,7 @@ import ma.ensam.okanetransfer.domain.agency.Corridor;
 import ma.ensam.okanetransfer.domain.finance.CashMovement;
 import ma.ensam.okanetransfer.domain.finance.CashRegister;
 import ma.ensam.okanetransfer.domain.finance.Commission;
+import ma.ensam.okanetransfer.domain.referential.Country;
 import ma.ensam.okanetransfer.domain.referential.Currency;
 import ma.ensam.okanetransfer.domain.transfer.Beneficiary;
 import ma.ensam.okanetransfer.domain.transfer.Transfer;
@@ -15,6 +16,7 @@ import ma.ensam.okanetransfer.domain.user.Agent;
 import ma.ensam.okanetransfer.domain.user.Client;
 import ma.ensam.okanetransfer.dto.agency.FeeSimulationRequest;
 import ma.ensam.okanetransfer.dto.agency.FeeSimulationResponse;
+import ma.ensam.okanetransfer.dto.transfer.BeneficiaryRequest;
 import ma.ensam.okanetransfer.dto.transfer.TransferCreateRequest;
 import ma.ensam.okanetransfer.dto.transfer.TransferResponse;
 import ma.ensam.okanetransfer.enums.AgencyStatus;
@@ -42,13 +44,15 @@ public class TransferService {
     private final CommissionRepository commissionRepository;
     private final FeeCalculationService feeCalculationService;
     private final UserRepository userRepository;
+    private final CountryRepository countryRepository;
+    private final AmlService amlService;
 
     public TransferService(TransferRepository transferRepository, AgencyRepository agencyRepository,
                            CorridorRepository corridorRepository, CurrencyRepository currencyRepository,
                            ClientRepository clientRepository, BeneficiaryRepository beneficiaryRepository,
                            CashRegisterRepository cashRegisterRepository, CashMovementRepository cashMovementRepository,
                            CommissionRepository commissionRepository, FeeCalculationService feeCalculationService,
-                           UserRepository userRepository) {
+                           UserRepository userRepository, CountryRepository countryRepository, AmlService amlService) {
         this.transferRepository = transferRepository;
         this.agencyRepository = agencyRepository;
         this.corridorRepository = corridorRepository;
@@ -60,6 +64,8 @@ public class TransferService {
         this.commissionRepository = commissionRepository;
         this.feeCalculationService = feeCalculationService;
         this.userRepository = userRepository;
+        this.countryRepository = countryRepository;
+        this.amlService = amlService;
     }
 
     public TransferResponse createTransfer(TransferCreateRequest request, String agentEmail) {
@@ -87,8 +93,7 @@ public class TransferService {
 
         Client sender = clientRepository.findById(request.getSenderClientId())
                 .orElseThrow(() -> new BusinessException("Expéditeur introuvable"));
-        Beneficiary beneficiary = beneficiaryRepository.findById(request.getBeneficiary().getId()) 
-                .orElseThrow(() -> new BusinessException("Bénéficiaire introuvable"));
+        Beneficiary beneficiary = resolveBeneficiary(request.getBeneficiary(), sender);
 
         Agency destAgency = agencyRepository.findById(request.getDestinationAgencyId())
                 .orElseThrow(() -> new BusinessException("Agence destination introuvable"));
@@ -117,6 +122,10 @@ public class TransferService {
 
         Transfer savedTransfer = transferRepository.save(transfer);
 
+        if (amlService.checkTransfer(savedTransfer).isBlocked()) {
+            return mapToResponse(transferRepository.findById(savedTransfer.getId()).orElseThrow());
+        }
+
         Commission commission = new Commission();
         commission.setTransfer(savedTransfer);
         commission.setAgency(sourceAgency);
@@ -132,6 +141,9 @@ public class TransferService {
         Transfer transfer = transferRepository.findByReference(reference)
                 .orElseThrow(() -> new BusinessException("Transfert introuvable"));
 
+        if (transfer.getStatus() == TransferStatus.BLOCKED_AML) {
+            throw new BusinessException("Ce transfert est bloqué pour conformité AML.");
+        }
         if (transfer.getStatus() != TransferStatus.PENDING_PAYMENT) {
             throw new BusinessException("Ce transfert n'est pas en attente de paiement.");
         }
@@ -162,6 +174,39 @@ public class TransferService {
         transferRepository.save(transfer);
 
         return plainWithdrawalCode;
+    }
+
+    private Beneficiary resolveBeneficiary(BeneficiaryRequest request, Client sender) {
+        if (request.getId() != null) {
+            Beneficiary existing = beneficiaryRepository.findById(request.getId())
+                    .orElseThrow(() -> new BusinessException("Bénéficiaire introuvable"));
+            if (!existing.getClient().getId().equals(sender.getId())) {
+                throw new BusinessException("Ce bénéficiaire n'appartient pas à l'expéditeur.");
+            }
+            return existing;
+        }
+
+        if (request.getFirstName() == null || request.getFirstName().isBlank()
+                || request.getLastName() == null || request.getLastName().isBlank()
+                || request.getPhoneNumber() == null || request.getPhoneNumber().isBlank()
+                || request.getCountryId() == null
+                || request.getIdentityType() == null
+                || request.getIdentityNumber() == null || request.getIdentityNumber().isBlank()) {
+            throw new BusinessException("Informations du bénéficiaire incomplètes.");
+        }
+
+        Country country = countryRepository.findById(request.getCountryId())
+                .orElseThrow(() -> new BusinessException("Pays du bénéficiaire introuvable"));
+
+        Beneficiary beneficiary = new Beneficiary();
+        beneficiary.setClient(sender);
+        beneficiary.setFirstName(request.getFirstName().trim());
+        beneficiary.setLastName(request.getLastName().trim());
+        beneficiary.setPhoneNumber(request.getPhoneNumber().trim());
+        beneficiary.setCountry(country);
+        beneficiary.setIdentityType(request.getIdentityType());
+        beneficiary.setIdentityNumberEncrypted(request.getIdentityNumber().trim());
+        return beneficiaryRepository.save(beneficiary);
     }
 
     private TransferResponse mapToResponse(Transfer transfer) {

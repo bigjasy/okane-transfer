@@ -3,6 +3,8 @@ package ma.ensam.okanetransfer.dto.transfer;
 import ma.ensam.okanetransfer.enums.IdentityType;
 
 public class BeneficiaryRequest {
+    /** Existing beneficiary for this sender; omit to create a new one from the other fields. */
+    private Long id;
     private String firstName;
     private String lastName;
     private String phoneNumber;
@@ -11,6 +13,14 @@ public class BeneficiaryRequest {
     private String identityNumber;
 
     // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getFirstName() {
         return firstName;
     }
