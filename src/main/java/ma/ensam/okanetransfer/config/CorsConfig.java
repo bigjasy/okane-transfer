@@ -10,7 +10,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class CorsConfig {
-    private static final String DEFAULT_ALLOWED_ORIGINS = "http://localhost:4200";
+    private static final String DEFAULT_ALLOWED_ORIGINS = "http://localhost:4200,http://localhost:4300,http://127.0.0.1:4200,http://127.0.0.1:4300";
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
