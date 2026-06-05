@@ -59,9 +59,11 @@ export class BeneficiariesComponent implements OnInit {
   load(): void {
     this.data.beneficiaries().subscribe({
       next: x => { this.beneficiaries = x; this.errorMsg = ''; },
-      error: () => {
+      error: (err) => {
         console.warn('[Beneficiaries] backend endpoint missing, using fallback mock');
-        this.errorMsg = 'Impossible de charger les bénéficiaires depuis le backend.';
+        this.errorMsg = err?.status === 404
+          ? 'Endpoint bénéficiaires non disponible côté backend.'
+          : 'Impossible de charger les bénéficiaires depuis le backend.';
       }
     });
   }
@@ -72,7 +74,11 @@ export class BeneficiariesComponent implements OnInit {
       : this.data.createBeneficiary(this.form);
     obs.subscribe({
       next: () => { this.cancelEdit(); this.load(); },
-      error: () => { this.errorMsg = 'Erreur lors de la sauvegarde du bénéficiaire.'; }
+      error: (err) => {
+        this.errorMsg = err?.status === 404
+          ? 'Endpoint bénéficiaires non disponible côté backend.'
+          : 'Erreur lors de la sauvegarde du bénéficiaire.';
+      }
     });
   }
 
@@ -97,7 +103,11 @@ export class BeneficiariesComponent implements OnInit {
   remove(id: number): void {
     this.data.deleteBeneficiary(id).subscribe({
       next: () => this.load(),
-      error: () => { this.errorMsg = 'Erreur lors de la suppression du bénéficiaire.'; }
+      error: (err) => {
+        this.errorMsg = err?.status === 404
+          ? 'Endpoint bénéficiaires non disponible côté backend.'
+          : 'Erreur lors de la suppression du bénéficiaire.';
+      }
     });
   }
 }

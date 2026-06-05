@@ -53,10 +53,8 @@ export class DataService {
     );
   }
   updateUserProfile(id: number, body: UserUpdateRequest): Observable<UserProfileResponse> {
-    return this.useMock() ? this.mock.getCurrentUser() : this.fallback(
-      this.api.put<UserProfileResponse | ApiResponse<UserProfileResponse>>(`/users/${id}`, body).pipe(map(r => this.unwrap(r))),
-      this.mock.getCurrentUser()
-    );
+    if (this.useMock()) return this.mock.getCurrentUser();
+    return this.api.put<UserProfileResponse | ApiResponse<UserProfileResponse>>(`/users/${id}`, body).pipe(map(r => this.unwrap(r)));
   }
   beneficiaries(): Observable<BeneficiaryResponse[]> {
     return this.useMock() ? this.mock.getBeneficiaries() : this.fallback(

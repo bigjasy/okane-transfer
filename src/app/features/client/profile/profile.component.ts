@@ -76,8 +76,8 @@ export class ProfileComponent implements OnInit {
       },
       error: (err) => {
         const status = err?.status;
-        this.saveMsg = status === 404
-          ? 'Endpoint backend de mise à jour non disponible.'
+        this.saveMsg = (status === 500 || status === 404)
+          ? 'La mise à jour du profil n\'est pas encore disponible côté backend.'
           : 'Erreur lors de la mise à jour du profil.';
         this.saveSuccess = false;
         this.saving = false;
