@@ -48,9 +48,10 @@ export class ChatbotComponent {
         this.loading = false;
       },
       error: (err) => {
+        console.warn('[Chatbot] POST /chatbot error:', err?.status);
         const text = err?.status === 404
           ? 'Endpoint chatbot non disponible côté backend.'
-          : 'Erreur de communication avec le chatbot.';
+          : 'Erreur de communication avec le chatbot (statut ' + (err?.status ?? '?') + ').';
         this.messages.push({ from: 'bot', text });
         this.loading = false;
       }

@@ -57,9 +57,10 @@ export class MobileMoneyComponent {
       next: x => { this.result = x; this.loading = false; },
       error: (err) => {
         this.loading = false;
+        console.warn('[MobileMoney] submit error:', err?.status);
         this.errorMsg = err?.status === 404
-          ? 'Endpoint mobile money non disponible côté backend.'
-          : 'Erreur lors de l\'envoi mobile money.';
+          ? 'Endpoint Mobile Money non disponible côté backend.'
+          : 'Erreur lors de l\'envoi mobile money (statut ' + (err?.status ?? '?') + ').';
       }
     });
   }
@@ -67,13 +68,15 @@ export class MobileMoneyComponent {
   callback(): void {
     if (!this.result) return;
     this.loading = true;
+    this.errorMsg = '';
     this.data.mobileMoneyCallback(this.result.id).subscribe({
       next: x => { this.result = x; this.loading = false; },
       error: (err) => {
         this.loading = false;
+        console.warn('[MobileMoney] callback error:', err?.status);
         this.errorMsg = err?.status === 404
-          ? 'Endpoint simulate-callback non disponible côté backend.'
-          : 'Erreur simulate callback.';
+          ? 'Endpoint Mobile Money non disponible côté backend.'
+          : 'Erreur simulate callback (statut ' + (err?.status ?? '?') + ').';
       }
     });
   }
@@ -81,13 +84,15 @@ export class MobileMoneyComponent {
   reconcile(): void {
     if (!this.result) return;
     this.loading = true;
+    this.errorMsg = '';
     this.data.mobileMoneyReconcile(this.result.id).subscribe({
       next: x => { this.result = x; this.loading = false; },
       error: (err) => {
         this.loading = false;
+        console.warn('[MobileMoney] reconcile error:', err?.status);
         this.errorMsg = err?.status === 404
-          ? 'Endpoint reconciliation non disponible côté backend.'
-          : 'Erreur reconciliation.';
+          ? 'Endpoint Mobile Money non disponible côté backend.'
+          : 'Erreur reconciliation (statut ' + (err?.status ?? '?') + ').';
       }
     });
   }

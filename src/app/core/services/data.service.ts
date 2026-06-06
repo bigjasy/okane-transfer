@@ -85,27 +85,47 @@ export class DataService {
   notifications(): Observable<NotificationResponse[]> { return this.mock.notifications(); }
   auditLogs(): Observable<AuditLogResponse[]> { return this.mock.auditLogs(); }
   mobileMoney(body: MobileMoneyRequest): Observable<MobileMoneyResponse> {
-    return this.useMock() ? this.mock.createMobileMoneyTransfer(body) : this.fallback(
-      this.api.post<MobileMoneyResponse | ApiResponse<MobileMoneyResponse>>('/mobile-money/transfers', body).pipe(map(r => this.unwrap(r))),
-      this.mock.createMobileMoneyTransfer(body)
+    if (this.useMock()) return this.mock.createMobileMoneyTransfer(body);
+    return this.api.post<MobileMoneyResponse | ApiResponse<MobileMoneyResponse>>('/mobile-money/transfers', body).pipe(
+      map(r => this.unwrap(r)),
+      catchError(err => {
+        console.warn('[MobileMoney] POST /mobile-money/transfers indisponible:', err?.status);
+        if (environment.allowMockFallback) return this.mock.createMobileMoneyTransfer(body);
+        throw err;
+      })
     );
   }
   mobileMoneyCallback(id: number): Observable<MobileMoneyResponse> {
-    return this.useMock() ? this.mock.createMobileMoneyTransfer({ transferReference: '', operator: 'ORANGE_MONEY', walletPhoneNumber: '' }) : this.fallback(
-      this.api.patch<MobileMoneyResponse | ApiResponse<MobileMoneyResponse>>(`/mobile-money/transfers/${id}/simulate-callback`).pipe(map(r => this.unwrap(r))),
-      of({ id, transferReference: '', operator: 'ORANGE_MONEY', status: 'CONFIRMED', reconciliationStatus: 'NOT_RECONCILED', operatorTransactionReference: '' } as MobileMoneyResponse)
+    if (this.useMock()) return of({ id, transferReference: '', operator: 'ORANGE_MONEY' as const, status: 'CONFIRMED' as const, reconciliationStatus: 'NOT_RECONCILED' as const, operatorTransactionReference: '' });
+    return this.api.patch<MobileMoneyResponse | ApiResponse<MobileMoneyResponse>>(`/mobile-money/transfers/${id}/simulate-callback`).pipe(
+      map(r => this.unwrap(r)),
+      catchError(err => {
+        console.warn('[MobileMoney] PATCH /mobile-money/transfers/{id}/simulate-callback indisponible:', err?.status);
+        if (environment.allowMockFallback) return of({ id, transferReference: '', operator: 'ORANGE_MONEY' as const, status: 'CONFIRMED' as const, reconciliationStatus: 'NOT_RECONCILED' as const, operatorTransactionReference: '' } as MobileMoneyResponse);
+        throw err;
+      })
     );
   }
   mobileMoneyReconcile(id: number): Observable<MobileMoneyResponse> {
-    return this.useMock() ? this.mock.createMobileMoneyTransfer({ transferReference: '', operator: 'ORANGE_MONEY', walletPhoneNumber: '' }) : this.fallback(
-      this.api.post<MobileMoneyResponse | ApiResponse<MobileMoneyResponse>>('/mobile-money/reconciliation', { id }).pipe(map(r => this.unwrap(r))),
-      of({ id, transferReference: '', operator: 'ORANGE_MONEY', status: 'CONFIRMED', reconciliationStatus: 'RECONCILED', operatorTransactionReference: '' } as MobileMoneyResponse)
+    if (this.useMock()) return of({ id, transferReference: '', operator: 'ORANGE_MONEY' as const, status: 'CONFIRMED' as const, reconciliationStatus: 'RECONCILED' as const, operatorTransactionReference: '' });
+    return this.api.post<MobileMoneyResponse | ApiResponse<MobileMoneyResponse>>('/mobile-money/reconciliation', { id }).pipe(
+      map(r => this.unwrap(r)),
+      catchError(err => {
+        console.warn('[MobileMoney] POST /mobile-money/reconciliation indisponible:', err?.status);
+        if (environment.allowMockFallback) return of({ id, transferReference: '', operator: 'ORANGE_MONEY' as const, status: 'CONFIRMED' as const, reconciliationStatus: 'RECONCILED' as const, operatorTransactionReference: '' } as MobileMoneyResponse);
+        throw err;
+      })
     );
   }
   chatbot(body: ChatbotRequest): Observable<ChatbotResponse> {
-    return this.useMock() ? this.mock.processChatbotMessage(body) : this.fallback(
-      this.api.post<ChatbotResponse | ApiResponse<ChatbotResponse>>('/chatbot', body).pipe(map(r => this.unwrap(r))),
-      this.mock.processChatbotMessage(body)
+    if (this.useMock()) return this.mock.processChatbotMessage(body);
+    return this.api.post<ChatbotResponse | ApiResponse<ChatbotResponse>>('/chatbot', body).pipe(
+      map(r => this.unwrap(r)),
+      catchError(err => {
+        console.warn('[Chatbot] POST /chatbot indisponible:', err?.status);
+        if (environment.allowMockFallback) return this.mock.processChatbotMessage(body);
+        throw err;
+      })
     );
   }
 }
