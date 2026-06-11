@@ -1,0 +1,24 @@
+# ── Database ──────────────────────────────────────────
+db.url=
+db.username=
+db.password=
+db.driver=org.postgresql.Driver
+
+# ── Hibernate ─────────────────────────────────────────
+hibernate.ddl-auto=none
+hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+hibernate.show-sql=false
+hibernate.format-sql=true
+
+# ── Secrets ───────────────────────────────────────────
+# AES-256 key for encrypting sensitive DB fields (32 bytes, Base64 or raw)
+aes.key=
+# JWT signing secret (min 32 bytes); empty = auto-generated on each restart
+jwt.secret=
+# Google Gemini API key for chatbot (get one at https://aistudio.google.com/apikey)
+gemini.api.key=
+
+# ── Configuration ─────────────────────────────────────
+cors.allowed-origins=http://localhost:4200
+kyc.upload-dir=
+aml.threshold=10000
