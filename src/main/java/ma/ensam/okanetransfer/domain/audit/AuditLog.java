@@ -42,7 +42,6 @@ public class AuditLog {
     @Column(name = "user_agent", length = 512)
     private String userAgent;
 
-    @Lob
     @Column(name = "details_json")
     private String detailsJson;
 

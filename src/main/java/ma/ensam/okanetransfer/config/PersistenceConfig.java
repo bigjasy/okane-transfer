@@ -26,15 +26,10 @@ public class PersistenceConfig {
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        // PostgreSQL defaults to restore later:
-        // dataSource.setDriverClassName(env("OKANE_DB_DRIVER", "org.postgresql.Driver"));
-        // dataSource.setUrl(env("OKANE_DB_URL", "jdbc:postgresql://localhost:5432/okane_transfer"));
-        // dataSource.setUsername(env("OKANE_DB_USERNAME", "okane"));
-        // dataSource.setPassword(env("OKANE_DB_PASSWORD", "okane"));
-        dataSource.setDriverClassName(env("OKANE_DB_DRIVER", "org.h2.Driver"));
-        dataSource.setUrl(env("OKANE_DB_URL", "jdbc:h2:mem:okane_transfer;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"));
-        dataSource.setUsername(env("OKANE_DB_USERNAME", "sa"));
-        dataSource.setPassword(env("OKANE_DB_PASSWORD", ""));
+        dataSource.setDriverClassName(env("OKANE_DB_DRIVER", "org.postgresql.Driver"));
+        dataSource.setUrl(env("OKANE_DB_URL", "jdbc:postgresql://localhost:5432/okane-transfer"));
+        dataSource.setUsername(env("OKANE_DB_USERNAME", "okane"));
+        dataSource.setPassword(env("OKANE_DB_PASSWORD", "1234"));
         return dataSource;
     }
 
@@ -60,10 +55,8 @@ public class PersistenceConfig {
 
     private Properties jpaProperties() {
         Properties properties = new Properties();
-        properties.setProperty("hibernate.hbm2ddl.auto", env("OKANE_HIBERNATE_DDL_AUTO", "update"));
-        // PostgreSQL default to restore later:
-        // properties.setProperty("hibernate.dialect", env("OKANE_HIBERNATE_DIALECT", "org.hibernate.dialect.PostgreSQLDialect"));
-        properties.setProperty("hibernate.dialect", env("OKANE_HIBERNATE_DIALECT", "org.hibernate.dialect.H2Dialect"));
+        properties.setProperty("hibernate.hbm2ddl.auto", env("OKANE_HIBERNATE_DDL_AUTO", "none"));
+        properties.setProperty("hibernate.dialect", env("OKANE_HIBERNATE_DIALECT", "org.hibernate.dialect.PostgreSQLDialect"));
         properties.setProperty("hibernate.show_sql", env("OKANE_HIBERNATE_SHOW_SQL", "false"));
         properties.setProperty("hibernate.format_sql", env("OKANE_HIBERNATE_FORMAT_SQL", "true"));
         return properties;

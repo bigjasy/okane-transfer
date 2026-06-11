@@ -16,9 +16,6 @@ public class Agent extends User {
     @Column(name = "employee_code", unique = true, length = 50)
     private String employeeCode;
 
-    @Column(name = "cash_register_id")
-    private Long cashRegisterId;
-
     public Agent() {
         setRole(Role.ROLE_AGENT);
     }
@@ -37,13 +34,5 @@ public class Agent extends User {
 
     public void setEmployeeCode(String employeeCode) {
         this.employeeCode = employeeCode;
-    }
-
-    public Long getCashRegisterId() {
-        return cashRegisterId;
-    }
-
-    public void setCashRegisterId(Long cashRegisterId) {
-        this.cashRegisterId = cashRegisterId;
     }
 }

@@ -42,7 +42,7 @@ public class ExchangeRateHistory {
     private RateSource source;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "changed_by_user_id")
+    @JoinColumn(name = "changed_by_id")
     private User changedBy;
 
     @Column(name = "changed_at", nullable = false, updatable = false)

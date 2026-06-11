@@ -118,12 +118,18 @@ export class DataService {
     );
   }
   chatbot(body: ChatbotRequest): Observable<ChatbotResponse> {
-    if (this.useMock()) return this.mock.processChatbotMessage(body);
+    console.log('[Chatbot] Sending to backend:', environment.apiBaseUrl + '/chatbot', body);
     return this.api.post<ChatbotResponse | ApiResponse<ChatbotResponse>>('/chatbot', body).pipe(
-      map(r => this.unwrap(r)),
+      map(r => {
+        console.log('[Chatbot] Backend response:', r);
+        return this.unwrap(r);
+      }),
       catchError(err => {
-        console.warn('[Chatbot] POST /chatbot indisponible:', err?.status);
-        if (environment.allowMockFallback) return this.mock.processChatbotMessage(body);
+        console.warn('[Chatbot] Backend error - status:', err?.status, 'message:', err?.message);
+        if (environment.allowMockFallback) {
+          console.log('[Chatbot] Falling back to mock');
+          return this.mock.processChatbotMessage(body);
+        }
         throw err;
       })
     );

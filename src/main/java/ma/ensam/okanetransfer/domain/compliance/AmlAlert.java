@@ -36,7 +36,7 @@ public class AmlAlert {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "alert_type", nullable = false, length = 40)
+    @Column(name = "type", nullable = false, length = 30)
     private AmlAlertType type;
 
     @Enumerated(EnumType.STRING)
@@ -54,7 +54,7 @@ public class AmlAlert {
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewed_by_user_id")
+    @JoinColumn(name = "reviewed_by_id")
     private User reviewedBy;
 
     @Column(name = "reviewed_at")

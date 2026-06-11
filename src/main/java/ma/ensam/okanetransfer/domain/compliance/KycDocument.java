@@ -53,7 +53,7 @@ public class KycDocument {
     private LocalDateTime uploadedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewed_by_user_id")
+    @JoinColumn(name = "reviewed_by_id")
     private User reviewedBy;
 
     @Column(name = "reviewed_at")

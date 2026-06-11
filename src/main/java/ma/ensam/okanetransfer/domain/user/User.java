@@ -1,7 +1,7 @@
 package ma.ensam.okanetransfer.domain.user;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -22,7 +22,6 @@ import ma.ensam.okanetransfer.enums.UserStatus;
 @Entity
 @Table(name = "users")
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "user_type")
 public abstract class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -52,7 +52,8 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(
                                 AntPathRequestMatcher.antMatcher("/swagger-ui/**"),
-                                AntPathRequestMatcher.antMatcher("/v3/api-docs/**")
+                                AntPathRequestMatcher.antMatcher("/v3/api-docs/**"),
+                                AntPathRequestMatcher.antMatcher("/api/v1/chatbot")
                         ).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/otp/enable-2fa")).authenticated()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/otp/disable-2fa")).authenticated()
