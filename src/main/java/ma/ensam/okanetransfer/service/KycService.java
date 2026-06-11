@@ -22,6 +22,7 @@ import ma.ensam.okanetransfer.exception.ForbiddenOperationException;
 import ma.ensam.okanetransfer.exception.ResourceNotFoundException;
 import ma.ensam.okanetransfer.repository.KycDocumentRepository;
 import ma.ensam.okanetransfer.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -40,17 +41,20 @@ public class KycService {
     private final UserRepository userRepository;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final String uploadDir;
 
     public KycService(
             KycDocumentRepository kycDocumentRepository,
             UserRepository userRepository,
             AuditService auditService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            @Value("${kyc.upload-dir}") String uploadDir
     ) {
         this.kycDocumentRepository = kycDocumentRepository;
         this.userRepository = userRepository;
         this.auditService = auditService;
         this.notificationService = notificationService;
+        this.uploadDir = uploadDir;
     }
 
     public KycDocumentResponse uploadDocument(
@@ -182,9 +186,10 @@ public class KycService {
 
     private String storeFile(MultipartFile file) {
         try {
-            String uploadDir = System.getenv().getOrDefault("OKANE_KYC_UPLOAD_DIR",
-                    System.getProperty("java.io.tmpdir") + "/okane-kyc");
-            Path directory = Paths.get(uploadDir);
+            String dir = uploadDir != null && !uploadDir.isBlank()
+                    ? uploadDir
+                    : System.getProperty("java.io.tmpdir") + "/okane-kyc";
+            Path directory = Paths.get(dir);
             Files.createDirectories(directory);
             String filename = UUID.randomUUID() + "-" + file.getOriginalFilename();
             Path target = directory.resolve(filename);

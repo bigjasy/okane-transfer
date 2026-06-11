@@ -14,19 +14,19 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 import ma.ensam.okanetransfer.domain.user.User;
 import ma.ensam.okanetransfer.enums.OtpPurpose;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
-    private static final String JWT_SECRET_ENV = "OKANE_JWT_SECRET";
     private static final Duration ACCESS_TOKEN_TTL = Duration.ofHours(1);
     private static final Duration TEMPORARY_TOKEN_TTL = Duration.ofMinutes(5);
 
     private final SecretKey signingKey;
 
-    public JwtService() {
-        this.signingKey = resolveSigningKey();
+    public JwtService(@Value("${jwt.secret}") String configuredSecret) {
+        this.signingKey = resolveSigningKey(configuredSecret);
     }
 
     public String generateAccessToken(User user) {
@@ -85,14 +85,13 @@ public class JwtService {
                 .compact();
     }
 
-    private SecretKey resolveSigningKey() {
-        String configuredSecret = System.getenv(JWT_SECRET_ENV);
+    private SecretKey resolveSigningKey(String configuredSecret) {
         if (configuredSecret == null || configuredSecret.isBlank()) {
             return Jwts.SIG.HS256.key().build();
         }
         byte[] keyBytes = decodeSecret(configuredSecret);
         if (keyBytes.length < 32) {
-            throw new IllegalStateException(JWT_SECRET_ENV + " must be at least 32 bytes for HS256");
+            throw new IllegalStateException("jwt.secret must be at least 32 bytes for HS256");
         }
         return Keys.hmacShaKeyFor(keyBytes);
     }

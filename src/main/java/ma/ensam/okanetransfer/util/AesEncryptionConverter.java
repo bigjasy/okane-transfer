@@ -58,7 +58,10 @@ public class AesEncryptionConverter implements AttributeConverter<String, String
     }
 
     private SecretKey getSecretKey() {
-        String configuredKey = System.getenv(AES_KEY_ENV);
+        String configuredKey = System.getProperty(AES_KEY_ENV);
+        if (configuredKey == null) {
+            configuredKey = System.getenv(AES_KEY_ENV);
+        }
         if (configuredKey == null || configuredKey.isBlank()) {
             throw new IllegalStateException(AES_KEY_ENV + " must be configured for AES-256 encryption");
         }

@@ -23,6 +23,7 @@ import ma.ensam.okanetransfer.repository.AmlAlertRepository;
 import ma.ensam.okanetransfer.repository.TransferRepository;
 import ma.ensam.okanetransfer.repository.UserRepository;
 import ma.ensam.okanetransfer.repository.WatchlistEntryRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class AmlService {
     private final UserRepository userRepository;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final BigDecimal threshold;
 
     public AmlService(
             AmlAlertRepository amlAlertRepository,
@@ -45,7 +47,8 @@ public class AmlService {
             TransferRepository transferRepository,
             UserRepository userRepository,
             AuditService auditService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            @Value("${aml.threshold:10000}") BigDecimal threshold
     ) {
         this.amlAlertRepository = amlAlertRepository;
         this.watchlistEntryRepository = watchlistEntryRepository;
@@ -53,6 +56,7 @@ public class AmlService {
         this.userRepository = userRepository;
         this.auditService = auditService;
         this.notificationService = notificationService;
+        this.threshold = threshold;
     }
 
     @Transactional(readOnly = true)
@@ -174,11 +178,7 @@ public class AmlService {
     }
 
     private BigDecimal resolveThreshold() {
-        String configured = System.getenv("OKANE_AML_THRESHOLD");
-        if (configured == null || configured.isBlank()) {
-            return new BigDecimal("10000");
-        }
-        return new BigDecimal(configured);
+        return threshold;
     }
 
     private AmlAlert findAlert(Long id) {

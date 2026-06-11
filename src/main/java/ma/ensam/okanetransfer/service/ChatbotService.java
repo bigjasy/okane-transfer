@@ -8,6 +8,7 @@ import ma.ensam.okanetransfer.dto.chatbot.ChatbotRequest;
 import ma.ensam.okanetransfer.dto.chatbot.ChatbotResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,18 +21,19 @@ public class ChatbotService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final String apiKey;
+
+    public ChatbotService(@Value("${gemini.api.key}") String apiKey) {
+        this.apiKey = apiKey;
+    }
 
     public ChatbotResponse processMessage(ChatbotRequest request) {
-        String apiKey = resolveApiKey();
-        System.err.println("[ChatbotService] API key resolved: " + (apiKey != null ? "set (" + apiKey.substring(0, Math.min(4, apiKey.length())) + "..." + ")" : "NOT SET"));
         if (apiKey == null || apiKey.isBlank()) {
-            System.err.println("[ChatbotService] GEMINI_API_KEY not set");
             return fallback("Configuration manquante : clé API Gemini non définie.");
         }
 
         try {
             String url = GEMINI_URL + "?key=" + apiKey;
-            System.err.println("[ChatbotService] Calling Gemini API...");
 
             Map<String, Object> body = Map.of("contents", List.of(
                     Map.of("parts", List.of(
@@ -40,10 +42,8 @@ public class ChatbotService {
             ));
 
             String jsonResponse = restTemplate.postForObject(url, body, String.class);
-            System.err.println("[ChatbotService] Gemini response received: " + (jsonResponse != null ? jsonResponse.substring(0, Math.min(200, jsonResponse.length())) : "null"));
             return parseResponse(jsonResponse);
         } catch (Exception e) {
-            System.err.println("[ChatbotService] Gemini API call failed: " + e.getClass().getName() + " - " + e.getMessage());
             if (e.getMessage() != null && e.getMessage().contains("429")) {
                 return fallback("Le service IA est momentanément saturé (quota dépassé). Veuillez réessayer dans quelques instants.");
             }
@@ -93,11 +93,4 @@ public class ChatbotService {
         return response;
     }
 
-    private String resolveApiKey() {
-        String key = System.getenv("GEMINI_API_KEY");
-        if (key == null || key.isBlank()) {
-            key = System.getProperty("gemini.api.key");
-        }
-        return key;
-    }
 }
