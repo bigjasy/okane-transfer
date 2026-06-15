@@ -12,14 +12,17 @@ import ma.ensam.okanetransfer.domain.user.User;
 import ma.ensam.okanetransfer.dto.compliance.AmlAlertResponse;
 import ma.ensam.okanetransfer.dto.compliance.AmlCheckTransferResponse;
 import ma.ensam.okanetransfer.dto.compliance.AmlReviewRequest;
+import ma.ensam.okanetransfer.dto.compliance.ComplianceSummaryResponse;
 import ma.ensam.okanetransfer.dto.common.PageResponse;
 import ma.ensam.okanetransfer.enums.AmlAlertStatus;
 import ma.ensam.okanetransfer.enums.AmlAlertType;
+import ma.ensam.okanetransfer.enums.KycStatus;
 import ma.ensam.okanetransfer.enums.AuditAction;
 import ma.ensam.okanetransfer.enums.RiskLevel;
 import ma.ensam.okanetransfer.enums.TransferStatus;
 import ma.ensam.okanetransfer.exception.ResourceNotFoundException;
 import ma.ensam.okanetransfer.repository.AmlAlertRepository;
+import ma.ensam.okanetransfer.repository.KycDocumentRepository;
 import ma.ensam.okanetransfer.repository.TransferRepository;
 import ma.ensam.okanetransfer.repository.UserRepository;
 import ma.ensam.okanetransfer.repository.WatchlistEntryRepository;
@@ -39,6 +42,7 @@ public class AmlService {
     private final UserRepository userRepository;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final KycDocumentRepository kycDocumentRepository;
     private final BigDecimal threshold;
 
     public AmlService(
@@ -48,6 +52,7 @@ public class AmlService {
             UserRepository userRepository,
             AuditService auditService,
             NotificationService notificationService,
+            KycDocumentRepository kycDocumentRepository,
             @Value("${aml.threshold:10000}") BigDecimal threshold
     ) {
         this.amlAlertRepository = amlAlertRepository;
@@ -56,6 +61,7 @@ public class AmlService {
         this.userRepository = userRepository;
         this.auditService = auditService;
         this.notificationService = notificationService;
+        this.kycDocumentRepository = kycDocumentRepository;
         this.threshold = threshold;
     }
 
@@ -106,6 +112,20 @@ public class AmlService {
                 "{\"status\":\"" + request.getStatus() + "\"}"
         );
         return toResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public ComplianceSummaryResponse getComplianceSummary() {
+        ComplianceSummaryResponse summary = new ComplianceSummaryResponse();
+        summary.setPendingKycDocuments(kycDocumentRepository.countByStatus(KycStatus.PENDING));
+        summary.setOpenAmlAlerts(amlAlertRepository.countByStatus(AmlAlertStatus.OPEN));
+        summary.setCriticalAmlAlerts(
+                amlAlertRepository.countByRiskLevelAndStatus(RiskLevel.CRITICAL, AmlAlertStatus.OPEN)
+                        + amlAlertRepository.countByRiskLevelAndStatus(RiskLevel.CRITICAL, AmlAlertStatus.UNDER_REVIEW)
+        );
+        summary.setActiveWatchlistEntries(watchlistEntryRepository.countByActiveTrue());
+        summary.setBlockedTransfers(transferRepository.countByStatus(TransferStatus.BLOCKED_AML));
+        return summary;
     }
 
     public AmlCheckTransferResponse checkTransfer(String transferReference) {

@@ -15,7 +15,9 @@ export class SidebarComponent {
     { label: 'Manager Dashboard', path: '/manager/dashboard', roles: ['ROLE_MANAGER'] }, { label: 'Agents', path: '/manager/agents', roles: ['ROLE_MANAGER'] }, { label: 'Caisses', path: '/manager/cash-registers', roles: ['ROLE_MANAGER'] }, { label: 'Rapports agence', path: '/manager/reports', roles: ['ROLE_MANAGER'] },
     { label: 'Agent Dashboard', path: '/agent/dashboard', roles: ['ROLE_AGENT'] }, { label: 'Transferts', path: '/agent/transfers', roles: ['ROLE_AGENT'] }, { label: 'Créer transfert', path: '/agent/create-transfer', roles: ['ROLE_AGENT'] }, { label: 'Simulation frais', path: '/agent/fee-simulation', roles: ['ROLE_AGENT'] }, { label: 'Payout', path: '/agent/payout', roles: ['ROLE_AGENT'] }, { label: 'Caisse', path: '/agent/cash-register', roles: ['ROLE_AGENT'] },
     { label: 'Client Dashboard', path: '/client/dashboard', roles: ['ROLE_CLIENT'] }, { label: 'Profil', path: '/client/profile', roles: ['ROLE_CLIENT'] }, { label: 'Bénéficiaires', path: '/client/beneficiaries', roles: ['ROLE_CLIENT'] }, { label: 'Suivi transfert', path: '/client/transfer-tracking', roles: ['ROLE_CLIENT'] },
-    { label: 'Mobile Money', path: '/mobile-money', roles: ['ROLE_ADMIN','ROLE_MANAGER','ROLE_AGENT','ROLE_CLIENT'] }, { label: 'Chatbot', path: '/chatbot', roles: ['ROLE_ADMIN','ROLE_MANAGER','ROLE_AGENT','ROLE_CLIENT'] }
+    { label: 'Mobile Money', path: '/mobile-money', roles: ['ROLE_ADMIN','ROLE_MANAGER','ROLE_AGENT'] },
+    { label: 'Notifications', path: '/notifications', roles: ['ROLE_ADMIN','ROLE_MANAGER','ROLE_AGENT','ROLE_CLIENT'] },
+    { label: 'Chatbot', path: '/chatbot', roles: ['ROLE_ADMIN','ROLE_MANAGER','ROLE_AGENT','ROLE_CLIENT'] }
   ];
   items = computed(() => { const role = this.tokens.currentUser()?.role; return role ? this.all.filter(i => i.roles.includes(role)) : []; });
 }

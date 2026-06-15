@@ -12,6 +12,7 @@ target/
 *.iws
 *.iml
 *.ipr
+.smarttomcat/
 
 ### Eclipse ###
 .apt_generated
@@ -40,6 +41,7 @@ build/
 
 ### Important
 src/main/resources/application.properties
+src/main/resources/application.properties.idea/
 .mvn/wrapper/
 mvnw
 mvnw.cmd

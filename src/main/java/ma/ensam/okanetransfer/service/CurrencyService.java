@@ -52,6 +52,17 @@ public class CurrencyService {
     }
 
     @Transactional(readOnly = true)
+    public CurrencyResponse getCurrency(Long id) {
+        return toResponse(findCurrency(id));
+    }
+
+    public CurrencyResponse updateActivation(Long id, boolean active) {
+        Currency currency = findCurrency(id);
+        currency.setActive(active);
+        return toResponse(currencyRepository.save(currency));
+    }
+
+    @Transactional(readOnly = true)
     public Currency findCurrency(Long id) {
         return currencyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Currency", id));

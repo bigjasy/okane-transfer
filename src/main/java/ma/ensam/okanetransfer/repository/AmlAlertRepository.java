@@ -14,4 +14,8 @@ public interface AmlAlertRepository extends JpaRepository<AmlAlert, Long> {
     Page<AmlAlert> findByRiskLevel(RiskLevel riskLevel, Pageable pageable);
 
     List<AmlAlert> findByTransferId(Long transferId);
+
+    long countByStatus(AmlAlertStatus status);
+
+    long countByRiskLevelAndStatus(RiskLevel riskLevel, AmlAlertStatus status);
 }

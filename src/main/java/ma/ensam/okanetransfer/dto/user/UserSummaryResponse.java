@@ -18,7 +18,7 @@ public record UserSummaryResponse(
         return new UserSummaryResponse(
                 user.getId(),
                 user.getEmail(),
-                user.getFullName(),
+                user.getFullName(), 
                 user.getRole(),
                 user.getStatus(),
                 resolveAgencyName(user)
@@ -26,12 +26,13 @@ public record UserSummaryResponse(
     }
 
     private static String resolveAgencyName(User user) {
-        if (user instanceof Manager manager && manager.getAgencyId() != null) {
-            return "Agency #" + manager.getAgencyId();
+        if (user instanceof Manager manager && manager.getAgency() != null) {
+            return manager.getAgency().getName(); 
         }
-        if (user instanceof Agent agent && agent.getAgencyId() != null) {
-            return "Agency #" + agent.getAgencyId();
+        if (user instanceof Agent agent && agent.getAgency() != null) {
+            return agent.getAgency().getName();
         }
+        
         return null;
     }
 }

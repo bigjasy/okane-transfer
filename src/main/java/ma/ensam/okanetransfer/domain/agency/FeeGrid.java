@@ -46,7 +46,7 @@ public class FeeGrid {
     @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;
 
-    @Column(name = "valid_to", nullable = false)
+    @Column(name = "valid_to")
     private LocalDate validTo;
 
     @Column(nullable = false)

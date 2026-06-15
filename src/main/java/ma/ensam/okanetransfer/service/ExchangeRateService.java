@@ -2,6 +2,8 @@ package ma.ensam.okanetransfer.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import ma.ensam.okanetransfer.domain.referential.Currency;
 import ma.ensam.okanetransfer.domain.referential.ExchangeRate;
@@ -12,7 +14,11 @@ import ma.ensam.okanetransfer.dto.referential.ConversionResponse;
 import ma.ensam.okanetransfer.dto.referential.ExchangeRateHistoryResponse;
 import ma.ensam.okanetransfer.dto.referential.ExchangeRateRequest;
 import ma.ensam.okanetransfer.dto.referential.ExchangeRateResponse;
+import ma.ensam.okanetransfer.dto.referential.ExchangeRateSyncResponse;
+import ma.ensam.okanetransfer.dto.referential.ExternalRateQuote;
 import ma.ensam.okanetransfer.enums.AuditAction;
+import ma.ensam.okanetransfer.enums.RateSource;
+import ma.ensam.okanetransfer.exception.ResourceNotFoundException;
 import ma.ensam.okanetransfer.exception.BusinessException;
 import ma.ensam.okanetransfer.exception.ResourceNotFoundException;
 import ma.ensam.okanetransfer.repository.ExchangeRateHistoryRepository;
@@ -30,19 +36,22 @@ public class ExchangeRateService {
     private final CurrencyService currencyService;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final ExternalExchangeRateProvider externalExchangeRateProvider;
 
     public ExchangeRateService(
             ExchangeRateRepository exchangeRateRepository,
             ExchangeRateHistoryRepository exchangeRateHistoryRepository,
             CurrencyService currencyService,
             UserRepository userRepository,
-            AuditService auditService
+            AuditService auditService,
+            ExternalExchangeRateProvider externalExchangeRateProvider
     ) {
         this.exchangeRateRepository = exchangeRateRepository;
         this.exchangeRateHistoryRepository = exchangeRateHistoryRepository;
         this.currencyService = currencyService;
         this.userRepository = userRepository;
         this.auditService = auditService;
+        this.externalExchangeRateProvider = externalExchangeRateProvider;
     }
 
     @Transactional(readOnly = true)
@@ -100,6 +109,37 @@ public class ExchangeRateService {
         }
 
         return toResponse(saved);
+    }
+
+    public ExchangeRateSyncResponse syncFromExternalProvider(String actorEmail, String ipAddress, String userAgent) {
+        List<ExternalRateQuote> quotes = externalExchangeRateProvider.fetchLatestQuotes();
+        List<ExchangeRateResponse> updatedRates = new ArrayList<>();
+
+        for (ExternalRateQuote quote : quotes) {
+            try {
+                Currency source = currencyService.findByCode(quote.getSourceCurrencyCode());
+                Currency target = currencyService.findByCode(quote.getTargetCurrencyCode());
+
+                ExchangeRateRequest request = new ExchangeRateRequest();
+                request.setSourceCurrencyId(source.getId());
+                request.setTargetCurrencyId(target.getId());
+                request.setRate(quote.getRate());
+                request.setSource(RateSource.EXTERNAL_API);
+
+                ExchangeRateResponse response = upsertRate(request, actorEmail, ipAddress, userAgent);
+                updatedRates.add(response);
+            } catch (ResourceNotFoundException ignored) {
+                // Skip currency pairs not configured in this environment.
+            }
+        }
+
+        ExchangeRateSyncResponse syncResponse = new ExchangeRateSyncResponse();
+        syncResponse.setProvider(externalExchangeRateProvider.getProviderName());
+        syncResponse.setSource(RateSource.EXTERNAL_API);
+        syncResponse.setSyncedAt(LocalDateTime.now());
+        syncResponse.setUpdatedCount(updatedRates.size());
+        syncResponse.setRates(updatedRates);
+        return syncResponse;
     }
 
     @Transactional(readOnly = true)

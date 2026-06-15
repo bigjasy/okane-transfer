@@ -1,6 +1,7 @@
 package ma.ensam.okanetransfer.dto.finance;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public class CommissionResponse {
     private Long id;
@@ -8,6 +9,8 @@ public class CommissionResponse {
     private BigDecimal agencyPart;
     private BigDecimal centralPart;
     private String currency;
+    private String agencyName;
+    private LocalDateTime createdAt;
 
     // Getters and Setters
     public Long getId() {
@@ -39,6 +42,22 @@ public class CommissionResponse {
     }
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public String getAgencyName() {
+        return agencyName;
+    }
+
+    public void setAgencyName(String agencyName) {
+        this.agencyName = agencyName;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
     
     

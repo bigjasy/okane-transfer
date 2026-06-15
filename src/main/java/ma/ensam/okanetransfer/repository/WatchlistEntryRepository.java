@@ -10,4 +10,6 @@ public interface WatchlistEntryRepository extends JpaRepository<WatchlistEntry, 
     List<WatchlistEntry> findByLastNameIgnoreCaseAndActiveTrue(String lastName);
 
     Page<WatchlistEntry> findByActiveTrue(Pageable pageable);
+
+    long countByActiveTrue();
 }

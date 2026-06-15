@@ -8,6 +8,7 @@ public class AgencyResponse {
     private String code;
     private String name;
     private String city;
+    private String address;
     private String country;
     private AgencyStatus status;
     private BigDecimal dailyLimit;
@@ -36,6 +37,12 @@ public class AgencyResponse {
     }
     public void setCity(String city) {
         this.city = city;
+    }
+    public String getAddress() {
+        return address;
+    }
+    public void setAddress(String address) {
+        this.address = address;
     }
     public String getCountry() {
         return country;

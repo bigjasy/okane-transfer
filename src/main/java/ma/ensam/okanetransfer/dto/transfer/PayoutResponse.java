@@ -10,6 +10,10 @@ public class PayoutResponse {
     private BigDecimal paidAmount;
     private String currency;
     private LocalDateTime paidAt;
+    private String beneficiaryName;
+    private String agentName;
+    private String agencyName;
+    private String maskedIdentityNumber;
 
     // Getters and Setters
     public String getTransferReference() {
@@ -42,6 +46,36 @@ public class PayoutResponse {
     public void setPaidAt(LocalDateTime paidAt) {
         this.paidAt = paidAt;
     }
-    
-    
+
+    public String getBeneficiaryName() {
+        return beneficiaryName;
+    }
+
+    public void setBeneficiaryName(String beneficiaryName) {
+        this.beneficiaryName = beneficiaryName;
+    }
+
+    public String getAgentName() {
+        return agentName;
+    }
+
+    public void setAgentName(String agentName) {
+        this.agentName = agentName;
+    }
+
+    public String getAgencyName() {
+        return agencyName;
+    }
+
+    public void setAgencyName(String agencyName) {
+        this.agencyName = agencyName;
+    }
+
+    public String getMaskedIdentityNumber() {
+        return maskedIdentityNumber;
+    }
+
+    public void setMaskedIdentityNumber(String maskedIdentityNumber) {
+        this.maskedIdentityNumber = maskedIdentityNumber;
+    }
 }

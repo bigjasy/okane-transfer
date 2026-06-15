@@ -1,10 +1,14 @@
 package ma.ensam.okanetransfer.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import ma.ensam.okanetransfer.dto.common.PageResponse;
+import ma.ensam.okanetransfer.dto.compliance.ComplianceSummaryResponse;
 import ma.ensam.okanetransfer.dto.compliance.KycDocumentResponse;
 import ma.ensam.okanetransfer.dto.compliance.KycReviewRequest;
 import ma.ensam.okanetransfer.enums.KycDocumentType;
@@ -27,6 +31,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/kyc")
+@Tag(name = "KYC", description = "Know Your Customer document workflow (M3)")
+@SecurityRequirement(name = "BearerAuth")
 public class KycController {
 
     private final KycService kycService;
@@ -37,13 +43,14 @@ public class KycController {
 
     @PostMapping(value = "/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('CLIENT','AGENT')")
+    @Operation(summary = "Upload KYC document", description = "Stores an identity document for client verification.")
     public ResponseEntity<KycDocumentResponse> uploadDocument(
             Authentication authentication,
             HttpServletRequest request,
             @RequestPart("file") MultipartFile file,
-            @RequestPart("documentType") KycDocumentType documentType,
-            @RequestPart("documentNumber") String documentNumber,
-            @RequestParam(required = false) Long userId
+            @RequestParam("documentType") KycDocumentType documentType,
+            @RequestParam("documentNumber") String documentNumber,
+            @RequestParam(name = "userId", required = false) Long userId
     ) {
         KycDocumentResponse response = kycService.uploadDocument(
                 file,
@@ -59,22 +66,25 @@ public class KycController {
 
     @GetMapping("/documents/me")
     @PreAuthorize("hasRole('CLIENT')")
+    @Operation(summary = "My KYC documents")
     public ResponseEntity<List<KycDocumentResponse>> myDocuments(Authentication authentication) {
         return ResponseEntity.ok(kycService.getMyDocuments(authentication.getName()));
     }
 
     @GetMapping("/users/{userId}/documents")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER','AGENT')")
-    public ResponseEntity<List<KycDocumentResponse>> userDocuments(@PathVariable Long userId) {
+    @Operation(summary = "KYC documents for a user")
+    public ResponseEntity<List<KycDocumentResponse>> userDocuments(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(kycService.getUserDocuments(userId));
     }
 
     @PatchMapping("/documents/{id}/review")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @Operation(summary = "Review KYC document", description = "Approve or reject a pending document.")
     public ResponseEntity<KycDocumentResponse> reviewDocument(
             Authentication authentication,
             HttpServletRequest request,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody KycReviewRequest body
     ) {
         return ResponseEntity.ok(kycService.reviewDocument(
@@ -88,9 +98,10 @@ public class KycController {
 
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @Operation(summary = "Pending KYC documents", description = "Paginated queue for compliance officers.")
     public ResponseEntity<PageResponse<KycDocumentResponse>> pendingDocuments(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size
     ) {
         return ResponseEntity.ok(kycService.getPendingDocuments(PageRequest.of(page, size)));
     }

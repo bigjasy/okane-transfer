@@ -14,20 +14,30 @@ import ma.ensam.okanetransfer.domain.transfer.Beneficiary;
 import ma.ensam.okanetransfer.domain.transfer.Transfer;
 import ma.ensam.okanetransfer.domain.user.Agent;
 import ma.ensam.okanetransfer.domain.user.Client;
+import ma.ensam.okanetransfer.domain.user.Manager;
+import ma.ensam.okanetransfer.domain.user.User;
 import ma.ensam.okanetransfer.dto.agency.FeeSimulationRequest;
 import ma.ensam.okanetransfer.dto.agency.FeeSimulationResponse;
+import ma.ensam.okanetransfer.dto.common.PageResponse;
 import ma.ensam.okanetransfer.dto.transfer.BeneficiaryRequest;
 import ma.ensam.okanetransfer.dto.transfer.TransferCreateRequest;
+import ma.ensam.okanetransfer.dto.transfer.TransferReceiptResponse;
 import ma.ensam.okanetransfer.dto.transfer.TransferResponse;
+import ma.ensam.okanetransfer.dto.transfer.TransferTrackingResponse;
 import ma.ensam.okanetransfer.enums.AgencyStatus;
 import ma.ensam.okanetransfer.enums.CashMovementType;
 import ma.ensam.okanetransfer.enums.CashRegisterStatus;
+import ma.ensam.okanetransfer.enums.Role;
 import ma.ensam.okanetransfer.enums.TransferStatus;
 import ma.ensam.okanetransfer.exception.BusinessException;
+import ma.ensam.okanetransfer.exception.ForbiddenOperationException;
+import ma.ensam.okanetransfer.exception.ResourceNotFoundException;
 import ma.ensam.okanetransfer.repository.*;
 import ma.ensam.okanetransfer.util.CodeGenerator;
 
 import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @Transactional
@@ -46,13 +56,15 @@ public class TransferService {
     private final UserRepository userRepository;
     private final CountryRepository countryRepository;
     private final AmlService amlService;
+    private final TransferLimitService transferLimitService;
 
     public TransferService(TransferRepository transferRepository, AgencyRepository agencyRepository,
                            CorridorRepository corridorRepository, CurrencyRepository currencyRepository,
                            ClientRepository clientRepository, BeneficiaryRepository beneficiaryRepository,
                            CashRegisterRepository cashRegisterRepository, CashMovementRepository cashMovementRepository,
                            CommissionRepository commissionRepository, FeeCalculationService feeCalculationService,
-                           UserRepository userRepository, CountryRepository countryRepository, AmlService amlService) {
+                           UserRepository userRepository, CountryRepository countryRepository, AmlService amlService,
+                           TransferLimitService transferLimitService) {
         this.transferRepository = transferRepository;
         this.agencyRepository = agencyRepository;
         this.corridorRepository = corridorRepository;
@@ -66,6 +78,7 @@ public class TransferService {
         this.userRepository = userRepository;
         this.countryRepository = countryRepository;
         this.amlService = amlService;
+        this.transferLimitService = transferLimitService;
     }
 
     public TransferResponse createTransfer(TransferCreateRequest request, String agentEmail) {
@@ -90,6 +103,8 @@ public class TransferService {
         simReq.setTargetCurrency(request.getTargetCurrency());
         simReq.setAmount(request.getAmount());
         FeeSimulationResponse simulation = feeCalculationService.simulateFees(simReq);
+
+        transferLimitService.validateTransferLimits(sourceAgency, corridor, simulation.getAmount());
 
         Client sender = clientRepository.findById(request.getSenderClientId())
                 .orElseThrow(() -> new BusinessException("Expéditeur introuvable"));
@@ -137,6 +152,33 @@ public class TransferService {
         return mapToResponse(savedTransfer);
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<TransferResponse> listVisibleTransfers(String userEmail, Pageable pageable) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userEmail));
+
+        Page<Transfer> transfers = switch (user.getRole()) {
+            case ROLE_ADMIN -> transferRepository.findAll(pageable);
+            case ROLE_MANAGER -> transferRepository.findByAgencyId(requireAgencyId((Manager) user), pageable);
+            case ROLE_AGENT -> {
+                Agent agent = (Agent) user;
+                yield transferRepository.findVisibleForAgent(agent.getId(), requireAgencyId(agent), pageable);
+            }
+            case ROLE_CLIENT -> transferRepository.findBySenderId(user.getId(), pageable);
+        };
+
+        return PageResponse.from(transfers.map(this::mapToResponse));
+    }
+
+    @Transactional(readOnly = true)
+    public TransferResponse getVisibleTransfer(String reference, String userEmail) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userEmail));
+        Transfer transfer = findTransfer(reference);
+        verifyTransferAccess(transfer, user);
+        return mapToResponse(transfer);
+    }
+
     public String confirmPaymentAtSending(String reference, String agentEmail) {
         Transfer transfer = transferRepository.findByReference(reference)
                 .orElseThrow(() -> new BusinessException("Transfert introuvable"));
@@ -176,6 +218,54 @@ public class TransferService {
         return plainWithdrawalCode;
     }
 
+    @Transactional(readOnly = true)
+    public TransferTrackingResponse trackTransfer(String reference) {
+        return mapToTrackingResponse(findTransfer(reference));
+    }
+
+    @Transactional(readOnly = true)
+    public TransferReceiptResponse getSendReceipt(String reference, String userEmail, String withdrawalCode) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userEmail));
+        Transfer transfer = findTransfer(reference);
+        verifyTransferAccess(transfer, user);
+
+        TransferReceiptResponse receipt = new TransferReceiptResponse();
+        receipt.setTransferReference(transfer.getReference());
+        receipt.setSenderName(transfer.getSender().getFirstName() + " " + transfer.getSender().getLastName());
+        receipt.setBeneficiaryName(transfer.getBeneficiary().getFirstName() + " " + transfer.getBeneficiary().getLastName());
+        receipt.setSentAmount(transfer.getSentAmount());
+        receipt.setFeeAmount(transfer.getFeeAmount());
+        receipt.setReceivedAmount(transfer.getReceivedAmount());
+        receipt.setSourceCurrency(transfer.getSourceCurrency().getCode());
+        receipt.setTargetCurrency(transfer.getTargetCurrency().getCode());
+        receipt.setExchangeRateApplied(transfer.getExchangeRateApplied());
+        receipt.setStatus(transfer.getStatus());
+        receipt.setCreatedAt(transfer.getCreatedAt());
+        if (withdrawalCode != null && !withdrawalCode.isBlank()) {
+            receipt.setWithdrawalCode(withdrawalCode.trim());
+        }
+        return receipt;
+    }
+
+    public TransferResponse cancelTransfer(String reference, String agentEmail) {
+        Transfer transfer = transferRepository.findByReference(reference)
+                .orElseThrow(() -> new BusinessException("Transfert introuvable avec cette référence."));
+
+        if (transfer.getStatus() == TransferStatus.PAID) {
+            throw new BusinessException("Impossible d'annuler ce transfert car il a déjà été retiré par le bénéficiaire.");
+        }
+
+        if (transfer.getStatus() == TransferStatus.CANCELLED) {
+            throw new BusinessException("Ce transfert est déjà annulé.");
+        }
+
+        transfer.setStatus(TransferStatus.CANCELLED);
+        Transfer savedTransfer = transferRepository.save(transfer);
+
+        return mapToResponse(savedTransfer);
+    }
+
     private Beneficiary resolveBeneficiary(BeneficiaryRequest request, Client sender) {
         if (request.getId() != null) {
             Beneficiary existing = beneficiaryRepository.findById(request.getId())
@@ -209,6 +299,56 @@ public class TransferService {
         return beneficiaryRepository.save(beneficiary);
     }
 
+    private Transfer findTransfer(String reference) {
+        return transferRepository.findByReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Transfer", reference));
+    }
+
+    private void verifyTransferAccess(Transfer transfer, User user) {
+        if (user.getRole() == Role.ROLE_ADMIN) {
+            return;
+        }
+
+        if (user instanceof Client client && transfer.getSender().getId().equals(client.getId())) {
+            return;
+        }
+
+        if (user instanceof Agent agent) {
+            Long agencyId = requireAgencyId(agent);
+            boolean sameAgent = transfer.getCreatedByAgent() != null
+                    && transfer.getCreatedByAgent().getId().equals(agent.getId());
+            boolean sameAgency = agencyMatches(transfer, agencyId);
+            if (sameAgent || sameAgency) {
+                return;
+            }
+        }
+
+        if (user instanceof Manager manager && agencyMatches(transfer, requireAgencyId(manager))) {
+            return;
+        }
+
+        throw new ForbiddenOperationException("Vous n'êtes pas autorisé à consulter ce transfert.");
+    }
+
+    private Long requireAgencyId(Agent agent) {
+        if (agent.getAgency() == null || agent.getAgency().getId() == null) {
+            throw new ForbiddenOperationException("L'agent n'est affecté à aucune agence.");
+        }
+        return agent.getAgency().getId();
+    }
+
+    private Long requireAgencyId(Manager manager) {
+        if (manager.getAgency() == null || manager.getAgency().getId() == null) {
+            throw new ForbiddenOperationException("Le manager n'est affecté à aucune agence.");
+        }
+        return manager.getAgency().getId();
+    }
+
+    private boolean agencyMatches(Transfer transfer, Long agencyId) {
+        return (transfer.getSourceAgency() != null && transfer.getSourceAgency().getId().equals(agencyId))
+                || (transfer.getDestinationAgency() != null && transfer.getDestinationAgency().getId().equals(agencyId));
+    }
+
     private TransferResponse mapToResponse(Transfer transfer) {
         TransferResponse res = new TransferResponse();
         res.setId(transfer.getId());
@@ -225,5 +365,24 @@ public class TransferService {
         res.setCreatedAt(transfer.getCreatedAt());
         res.setExpiresAt(transfer.getExpiresAt());
         return res;
+    }
+
+    private TransferTrackingResponse mapToTrackingResponse(Transfer transfer) {
+        TransferTrackingResponse response = new TransferTrackingResponse();
+        response.setReference(transfer.getReference());
+        response.setStatus(transfer.getStatus());
+        response.setAmount(transfer.getSentAmount());
+        response.setReceivedAmount(transfer.getReceivedAmount());
+        response.setSourceCountry(transfer.getSourceCountry() != null ? transfer.getSourceCountry().getName() : "");
+        response.setDestinationCountry(transfer.getDestinationCountry() != null ? transfer.getDestinationCountry().getName() : "");
+        response.setSourceCurrency(transfer.getSourceCurrency() != null ? transfer.getSourceCurrency().getCode() : "");
+        response.setTargetCurrency(transfer.getTargetCurrency() != null ? transfer.getTargetCurrency().getCode() : "");
+        response.setBeneficiaryName(transfer.getBeneficiary() != null
+                ? transfer.getBeneficiary().getFirstName() + " " + transfer.getBeneficiary().getLastName()
+                : "");
+        response.setCreatedAt(transfer.getCreatedAt());
+        response.setPaidAt(transfer.getPaidAt());
+        response.setExpiresAt(transfer.getExpiresAt());
+        return response;
     }
 }

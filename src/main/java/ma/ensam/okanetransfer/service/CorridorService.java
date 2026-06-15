@@ -61,6 +61,13 @@ public class CorridorService {
         return mapToResponse(corridorRepository.save(corridor));
     }
 
+    public CorridorResponse toggleActivation(Long id, boolean active) {
+        Corridor corridor = corridorRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Corridor introuvable."));
+        corridor.setActive(active);
+        return mapToResponse(corridorRepository.save(corridor));
+    }
+
     private CorridorResponse mapToResponse(Corridor corridor) {
         CorridorResponse res = new CorridorResponse();
         res.setId(corridor.getId());
@@ -68,15 +75,18 @@ public class CorridorService {
         res.setDailyLimit(corridor.getDailyLimit());
         res.setMonthlyLimit(corridor.getMonthlyLimit());
         
-        // Mappage simplifié des stubs de pays
         CountryResponse source = new CountryResponse();
         source.setId(corridor.getSourceCountry().getId());
+        source.setIsoCode(corridor.getSourceCountry().getIsoCode());
         source.setName(corridor.getSourceCountry().getName());
+        source.setActive(corridor.getSourceCountry().isActive());
         res.setSourceCountry(source);
 
         CountryResponse dest = new CountryResponse();
         dest.setId(corridor.getDestinationCountry().getId());
+        dest.setIsoCode(corridor.getDestinationCountry().getIsoCode());
         dest.setName(corridor.getDestinationCountry().getName());
+        dest.setActive(corridor.getDestinationCountry().isActive());
         res.setDestinationCountry(dest);
 
         return res;

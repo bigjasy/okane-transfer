@@ -48,11 +48,14 @@ export const routes: Routes = [
     { path: 'beneficiaries', loadComponent: () => import('./features/client/beneficiaries/beneficiaries.component').then(m => m.BeneficiariesComponent) },
     { path: 'transfer-tracking', loadComponent: () => import('./features/client/transfer-tracking/transfer-tracking.component').then(m => m.TransferTrackingComponent) }
   ]},
-  { path: 'mobile-money', component: SecuredLayoutComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_AGENT', 'ROLE_CLIENT'] }, children: [
+  { path: 'mobile-money', component: SecuredLayoutComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_AGENT'] }, children: [
     { path: '', loadComponent: () => import('./features/mobile-money/mobile-money.component').then(m => m.MobileMoneyComponent) }
   ]},
   { path: 'chatbot', component: SecuredLayoutComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_AGENT', 'ROLE_CLIENT'] }, children: [
     { path: '', loadComponent: () => import('./features/chatbot/chatbot.component').then(m => m.ChatbotComponent) }
+  ]},
+  { path: 'notifications', component: SecuredLayoutComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_AGENT', 'ROLE_CLIENT'] }, children: [
+    { path: '', loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent) }
   ]},
   { path: '**', redirectTo: 'auth/login' }
 ];

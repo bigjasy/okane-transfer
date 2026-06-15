@@ -8,13 +8,18 @@ import ma.ensam.okanetransfer.domain.finance.CashMovement;
 import ma.ensam.okanetransfer.domain.finance.CashRegister;
 import ma.ensam.okanetransfer.domain.referential.Currency;
 import ma.ensam.okanetransfer.domain.user.Agent;
+import ma.ensam.okanetransfer.domain.user.Manager;
 import ma.ensam.okanetransfer.domain.user.User;
 import ma.ensam.okanetransfer.dto.finance.CashClosingRequest;
+import ma.ensam.okanetransfer.dto.finance.CashMovementRequest;
+import ma.ensam.okanetransfer.dto.finance.CashMovementResponse;
 import ma.ensam.okanetransfer.dto.finance.CashRegisterOpenRequest;
 import ma.ensam.okanetransfer.dto.finance.CashRegisterResponse;
 import ma.ensam.okanetransfer.enums.CashMovementType;
 import ma.ensam.okanetransfer.enums.CashRegisterStatus;
+import ma.ensam.okanetransfer.enums.Role;
 import ma.ensam.okanetransfer.exception.BusinessException;
+import ma.ensam.okanetransfer.exception.ForbiddenOperationException;
 import ma.ensam.okanetransfer.repository.AgencyRepository;
 import ma.ensam.okanetransfer.repository.CashMovementRepository;
 import ma.ensam.okanetransfer.repository.CashRegisterRepository;
@@ -23,6 +28,7 @@ import ma.ensam.okanetransfer.repository.UserRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -113,6 +119,87 @@ public class CashRegisterService {
         return mapToResponse(savedRegister);
     }
 
+    public CashRegisterResponse getCurrentOpenRegister(String agentEmail, String currencyCode) {
+        User agent = userRepository.findByEmailIgnoreCase(agentEmail)
+                .orElseThrow(() -> new BusinessException("Agent introuvable avec cet email."));
+
+        CashRegister register = cashRegisterRepository.findByAgentIdAndStatus(agent.getId(), CashRegisterStatus.OPEN)
+                .orElseThrow(() -> new BusinessException("Aucune caisse n'est actuellement ouverte pour cet agent."));
+
+        if (currencyCode != null && !register.getCurrency().getCode().equalsIgnoreCase(currencyCode)) {
+            throw new BusinessException("La caisse ouverte ne correspond pas à la devise demandée.");
+        }
+
+        return mapToResponse(register);
+    }
+
+    public CashMovementResponse addManualMovement(Long id, CashMovementRequest request, String agentEmail) {
+        CashRegister register = cashRegisterRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Caisse introuvable."));
+
+        if (register.getStatus() != CashRegisterStatus.OPEN) {
+            throw new BusinessException("Impossible d'ajouter un mouvement sur une caisse fermée.");
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(agentEmail)
+                .orElseThrow(() -> new BusinessException("Utilisateur introuvable."));
+
+        Currency currency = currencyRepository.findByCode(request.getCurrencyCode())
+                .orElseThrow(() -> new BusinessException("Devise introuvable."));
+
+        CashMovement movement = new CashMovement();
+        movement.setCashRegister(register);
+        movement.setType(request.getType());
+        movement.setAmount(request.getAmount());
+        movement.setCurrency(currency);
+        movement.setReason(request.getReason());
+        movement.setCreatedBy(user);
+
+        if (request.getType() == CashMovementType.CASH_OUT) {
+            if (register.getCurrentBalance().compareTo(request.getAmount()) < 0) {
+                throw new BusinessException("Solde insuffisant dans la caisse pour effectuer ce retrait.");
+            }
+            register.setCurrentBalance(register.getCurrentBalance().subtract(request.getAmount()));
+        } else {
+            register.setCurrentBalance(register.getCurrentBalance().add(request.getAmount()));
+        }
+
+        CashMovement saved = cashMovementRepository.save(movement);
+        cashRegisterRepository.save(register);
+        return mapMovementToResponse(saved);
+    }
+
+    public List<CashMovementResponse> getMovements(Long id, String agentEmail) {
+        if (!cashRegisterRepository.existsById(id)) {
+            throw new BusinessException("Caisse introuvable.");
+        }
+        return cashMovementRepository.findByCashRegisterId(id).stream()
+                .map(this::mapMovementToResponse)
+                .toList();
+    }
+
+    public List<CashRegisterResponse> listAgencyRegisters(Long agencyId, String userEmail) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new BusinessException("Utilisateur introuvable."));
+        verifyAgencyAccess(user, agencyId);
+
+        return cashRegisterRepository.findByAgencyIdOrderByOpenedAtDesc(agencyId).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    private void verifyAgencyAccess(User user, Long agencyId) {
+        if (user.getRole() == Role.ROLE_ADMIN) {
+            return;
+        }
+        if (user instanceof Manager manager
+                && manager.getAgency() != null
+                && manager.getAgency().getId().equals(agencyId)) {
+            return;
+        }
+        throw new ForbiddenOperationException("Accès refusé aux caisses de cette agence.");
+    }
+
     private CashRegisterResponse mapToResponse(CashRegister register) {
         CashRegisterResponse response = new CashRegisterResponse();
         response.setId(register.getId());
@@ -123,5 +210,28 @@ public class CashRegisterService {
         response.setCurrentBalance(register.getCurrentBalance());
         response.setStatus(register.getStatus());
         return response;
+    }
+
+    private CashMovementResponse mapMovementToResponse(CashMovement movement) {
+        CashMovementResponse response = new CashMovementResponse();
+        response.setId(movement.getId());
+        response.setCashRegisterId(movement.getCashRegister().getId());
+        response.setType(movement.getType());
+        response.setAmount(movement.getAmount());
+        response.setCurrencyCode(movement.getCurrency().getCode());
+        response.setTransferReference(
+                movement.getTransfer() != null ? movement.getTransfer().getReference() : null
+        );
+        response.setReason(movement.getReason());
+        response.setCreatedByName(formatUserName(movement.getCreatedBy()));
+        response.setCreatedAt(movement.getCreatedAt());
+        return response;
+    }
+
+    private String formatUserName(User user) {
+        String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+        String lastName = user.getLastName() != null ? user.getLastName() : "";
+        String fullName = (firstName + " " + lastName).trim();
+        return !fullName.isBlank() ? fullName : user.getEmail();
     }
 }

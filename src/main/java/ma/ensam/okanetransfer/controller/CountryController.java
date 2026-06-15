@@ -1,5 +1,8 @@
 package ma.ensam.okanetransfer.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -21,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/countries")
+@Tag(name = "Countries", description = "ISO country referential (M3)")
+@SecurityRequirement(name = "BearerAuth")
 public class CountryController {
 
     private final CountryService countryService;
@@ -30,26 +35,30 @@ public class CountryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CountryResponse>> listCountries(@RequestParam(required = false) Boolean active) {
+    @Operation(summary = "List countries")
+    public ResponseEntity<List<CountryResponse>> listCountries(@RequestParam(name = "active", required = false) Boolean active) {
         return ResponseEntity.ok(countryService.listCountries(active));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Create country")
     public ResponseEntity<CountryResponse> createCountry(@Valid @RequestBody CountryRequest request) {
         CountryResponse created = countryService.createCountry(request);
         return ResponseEntity.created(URI.create("/api/v1/countries/" + created.getId())).body(created);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CountryResponse> getCountry(@PathVariable Long id) {
+    @Operation(summary = "Get country by id")
+    public ResponseEntity<CountryResponse> getCountry(@PathVariable("id") Long id) {
         return ResponseEntity.ok(countryService.getCountry(id));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update country")
     public ResponseEntity<CountryResponse> updateCountry(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody CountryRequest request
     ) {
         return ResponseEntity.ok(countryService.updateCountry(id, request));
@@ -57,8 +66,9 @@ public class CountryController {
 
     @PatchMapping("/{id}/activation")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Activate or deactivate country")
     public ResponseEntity<CountryResponse> updateActivation(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody ActivationRequest request
     ) {
         return ResponseEntity.ok(countryService.updateActivation(id, request.isActive()));

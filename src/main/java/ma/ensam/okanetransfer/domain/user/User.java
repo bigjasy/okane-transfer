@@ -69,6 +69,15 @@ public abstract class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "notify_email_enabled", nullable = false)
+    private boolean notifyEmailEnabled = true;
+
+    @Column(name = "notify_sms_enabled", nullable = false)
+    private boolean notifySmsEnabled = true;
+
+    @Column(name = "notify_push_enabled", nullable = false)
+    private boolean notifyPushEnabled = false;
+
     @PrePersist
     void prePersist() {
         LocalDateTime now = LocalDateTime.now();
@@ -208,5 +217,29 @@ public abstract class User {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public boolean isNotifyEmailEnabled() {
+        return notifyEmailEnabled;
+    }
+
+    public void setNotifyEmailEnabled(boolean notifyEmailEnabled) {
+        this.notifyEmailEnabled = notifyEmailEnabled;
+    }
+
+    public boolean isNotifySmsEnabled() {
+        return notifySmsEnabled;
+    }
+
+    public void setNotifySmsEnabled(boolean notifySmsEnabled) {
+        this.notifySmsEnabled = notifySmsEnabled;
+    }
+
+    public boolean isNotifyPushEnabled() {
+        return notifyPushEnabled;
+    }
+
+    public void setNotifyPushEnabled(boolean notifyPushEnabled) {
+        this.notifyPushEnabled = notifyPushEnabled;
     }
 }

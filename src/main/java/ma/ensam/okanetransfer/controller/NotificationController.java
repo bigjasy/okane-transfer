@@ -1,5 +1,8 @@
 package ma.ensam.okanetransfer.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import ma.ensam.okanetransfer.dto.common.PageResponse;
 import ma.ensam.okanetransfer.dto.notification.NotificationPreferencesResponse;
@@ -23,6 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
+@Tag(name = "Notifications", description = "In-app inbox plus real SMTP email and Twilio SMS when configured (M3)")
+@SecurityRequirement(name = "BearerAuth")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -32,11 +37,13 @@ public class NotificationController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','AGENT','CLIENT')")
+    @Operation(summary = "My notifications", description = "Paginated inbox for the authenticated user.")
     public ResponseEntity<PageResponse<NotificationResponse>> myNotifications(
             Authentication authentication,
-            @RequestParam(required = false) NotificationStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(name = "status", required = false) NotificationStatus status,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size
     ) {
         return ResponseEntity.ok(notificationService.getMyNotifications(
                 authentication.getName(),
@@ -46,27 +53,32 @@ public class NotificationController {
     }
 
     @PatchMapping("/{id}/read")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','AGENT','CLIENT')")
+    @Operation(summary = "Mark notification as read")
     public ResponseEntity<NotificationResponse> markAsRead(
             Authentication authentication,
-            @PathVariable Long id
+            @PathVariable("id") Long id
     ) {
         return ResponseEntity.ok(notificationService.markAsRead(id, authentication.getName()));
     }
 
     @PostMapping("/test")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Send test notification", description = "Delivers a real email/SMS when configured, otherwise returns an error.")
     public ResponseEntity<NotificationResponse> sendTest(@Valid @RequestBody NotificationTestRequest request) {
         return ResponseEntity.ok(notificationService.sendTestNotification(request));
     }
 
     @GetMapping("/preferences")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','AGENT','CLIENT')")
+    @Operation(summary = "Get notification preferences")
     public ResponseEntity<NotificationPreferencesResponse> getPreferences(Authentication authentication) {
         return ResponseEntity.ok(notificationService.getPreferences(authentication.getName()));
     }
 
     @PutMapping("/preferences")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','AGENT','CLIENT')")
+    @Operation(summary = "Update notification preferences")
     public ResponseEntity<NotificationPreferencesResponse> updatePreferences(
             Authentication authentication,
             @RequestBody NotificationPreferencesResponse request

@@ -3,16 +3,22 @@ package ma.ensam.okanetransfer.domain.user;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+
+import ma.ensam.okanetransfer.domain.agency.Agency;
 import ma.ensam.okanetransfer.enums.Role;
 
 @Entity
 @Table(name = "managers")
 @DiscriminatorValue("MANAGER")
 public class Manager extends User {
-    @Column(name = "agency_id")
-    private Long agencyId;
+    
+    @ManyToOne
+    @JoinColumn(name = "agency_id")
+    private Agency agency;
 
     @Column(name = "approval_limit", precision = 19, scale = 2)
     private BigDecimal approvalLimit;
@@ -21,12 +27,12 @@ public class Manager extends User {
         setRole(Role.ROLE_MANAGER);
     }
 
-    public Long getAgencyId() {
-        return agencyId;
+    public Agency getAgency() {
+        return agency;
     }
 
-    public void setAgencyId(Long agencyId) {
-        this.agencyId = agencyId;
+    public void setAgency(Agency agency) {
+        this.agency = agency;
     }
 
     public BigDecimal getApprovalLimit() {

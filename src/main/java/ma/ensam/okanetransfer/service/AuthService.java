@@ -103,9 +103,14 @@ public class AuthService {
         auditService.record(AuditAction.LOGIN, user, "User", String.valueOf(user.getId()), ipAddress, userAgent, null);
 
         if (user.isTwoFactorEnabled()) {
-            twoFactorService.requestOtp(user, OtpPurpose.LOGIN_2FA, NotificationChannel.EMAIL);
+            var challenge = twoFactorService.requestOtp(user, OtpPurpose.LOGIN_2FA, NotificationChannel.EMAIL);
             String temporaryToken = jwtService.generateTemporaryToken(user, OtpPurpose.LOGIN_2FA);
-            return new LoginResponse(true, temporaryToken, null, UserSummaryResponse.from(user));
+            return new LoginResponse(
+                    true,
+                    temporaryToken,
+                    null,
+                    UserSummaryResponse.from(user),
+                    challenge.simulatedCode());
         }
 
         return new LoginResponse(false, null, issueTokens(user, ipAddress, userAgent), UserSummaryResponse.from(user));

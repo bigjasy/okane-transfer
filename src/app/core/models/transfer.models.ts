@@ -7,5 +7,9 @@ export interface TransferConfirmRequest { otpCode: string; }
 export interface TransferCancelRequest { reason: string; }
 export interface TransferTrackingResponse { reference: string; status: TransferStatus; sourceCountry: string; destinationCountry: string; receivedAmount: number; createdAt: string; paidAt?: string; }
 export interface PayoutSearchRequest { withdrawalCode: string; beneficiaryPhoneNumber: string; }
+export interface PayoutSearchResponse { id?: number; reference: string; transferReference?: string; status: TransferStatus | string; senderName?: string; beneficiaryName?: string; beneficiaryPhoneNumber?: string; sentAmount?: number; receivedAmount?: number; sourceCurrency?: string; targetCurrency?: string; createdAt?: string; expiresAt?: string; paidAt?: string; withdrawalCode?: string; agentName?: string; agencyName?: string; }
+export interface PayoutValidateRequest { transferReference: string; withdrawalCode: string; identityType: IdentityType; identityNumber: string; }
+export interface PayoutValidateResponse { valid: boolean; requiresOtp: boolean; message?: string; }
 export interface PayoutConfirmRequest { transferReference: string; withdrawalCode: string; identityType: IdentityType; identityNumber: string; otpCode: string; }
-export interface PayoutResponse { transferReference: string; status: TransferStatus; paidAmount: number; currency: string; paidAt: string; }
+export interface PayoutResponse { transferReference: string; status: TransferStatus; paidAmount: number; currency: string; paidAt: string; beneficiaryName?: string; agentName?: string; agencyName?: string; maskedIdentityNumber?: string; }
+export interface PayoutReceiptResponse { transferReference: string; beneficiaryName: string; paidAmount: number; currency: string; paidAt: string; status: string; agentName?: string; agencyName?: string; maskedIdentityNumber?: string; }

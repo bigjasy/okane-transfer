@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import ma.ensam.okanetransfer.domain.agency.Agency;
 import ma.ensam.okanetransfer.domain.audit.AuditLog;
 import ma.ensam.okanetransfer.domain.user.Admin;
 import ma.ensam.okanetransfer.domain.user.Agent;
@@ -24,6 +25,7 @@ import ma.ensam.okanetransfer.exception.BusinessException;
 import ma.ensam.okanetransfer.exception.ForbiddenOperationException;
 import ma.ensam.okanetransfer.exception.ResourceNotFoundException;
 import ma.ensam.okanetransfer.repository.AdminRepository;
+import ma.ensam.okanetransfer.repository.AgencyRepository; // <-- Added
 import ma.ensam.okanetransfer.repository.AuditLogRepository;
 import ma.ensam.okanetransfer.repository.UserRepository;
 import org.springframework.data.domain.Pageable;
@@ -42,19 +44,22 @@ public class UserService {
     private final AuditLogRepository auditLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final AgencyRepository agencyRepository; // <-- Added
 
     public UserService(
             UserRepository userRepository,
             AdminRepository adminRepository,
             AuditLogRepository auditLogRepository,
             PasswordEncoder passwordEncoder,
-            AuditService auditService
+            AuditService auditService,
+            AgencyRepository agencyRepository // <-- Added
     ) {
         this.userRepository = userRepository;
         this.adminRepository = adminRepository;
         this.auditLogRepository = auditLogRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
+        this.agencyRepository = agencyRepository; // <-- Added
     }
 
     @Transactional(readOnly = true)
@@ -156,8 +161,11 @@ public class UserService {
         User user = getUserEntity(id);
         user.setStatus(request.status());
         User saved = userRepository.save(user);
+        AuditAction auditAction = request.status() == ma.ensam.okanetransfer.enums.UserStatus.ACTIVE
+                ? AuditAction.USER_ACTIVATED
+                : AuditAction.USER_SUSPENDED;
         auditService.record(
-                AuditAction.USER_SUSPENDED,
+                auditAction,
                 actor,
                 "User",
                 String.valueOf(saved.getId()),
@@ -237,31 +245,40 @@ public class UserService {
         return agencyId == null || agencyId.equals(agencyId(user));
     }
 
+    // --- CORRECTIONS BELOW: Using getAgency().getId() safely ---
+
     private Long agencyId(User user) {
-        if (user instanceof Manager manager) {
-            return manager.getAgencyId();
+        if (user instanceof Manager manager && manager.getAgency() != null) {
+            return manager.getAgency().getId();
         }
-        if (user instanceof Agent agent) {
-            return agent.getAgencyId();
+        if (user instanceof Agent agent && agent.getAgency() != null) {
+            return agent.getAgency().getId();
         }
         return null;
     }
 
     private void assignAgency(User user, Long agencyId) {
+        if (agencyId == null) return;
+        
+        Agency agency = agencyRepository.findById(agencyId)
+                .orElseThrow(() -> new BusinessException("AGENCY_NOT_FOUND", "Agency not found", HttpStatus.BAD_REQUEST));
+
         if (user instanceof Manager manager) {
-            manager.setAgencyId(agencyId);
+            manager.setAgency(agency);
         }
         if (user instanceof Agent agent) {
-            agent.setAgencyId(agencyId);
+            agent.setAgency(agency);
         }
     }
 
     private Long requireManagerAgency(Manager manager) {
-        if (manager.getAgencyId() == null) {
+        if (manager.getAgency() == null || manager.getAgency().getId() == null) {
             throw new ForbiddenOperationException("Manager is not assigned to an agency");
         }
-        return manager.getAgencyId();
+        return manager.getAgency().getId();
     }
+
+    // --- END CORRECTIONS ---
 
     private Role concreteRole(User user) {
         if (user instanceof Admin) {

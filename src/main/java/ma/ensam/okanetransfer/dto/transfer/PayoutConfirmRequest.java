@@ -17,7 +17,6 @@ public class PayoutConfirmRequest {
     @NotBlank(message = "Le numéro de pièce d'identité est obligatoire")
     private String identityNumber;
     
-    @NotBlank(message = "Le code OTP est obligatoire")
     private String otpCode;
 
     // Getters and Setters

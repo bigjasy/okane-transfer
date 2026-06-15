@@ -11,4 +11,6 @@ public interface KycDocumentRepository extends JpaRepository<KycDocument, Long> 
     List<KycDocument> findByUserId(Long userId);
 
     Page<KycDocument> findByStatus(KycStatus status, Pageable pageable);
+
+    long countByStatus(KycStatus status);
 }

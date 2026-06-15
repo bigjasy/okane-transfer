@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface CashRegisterRepository extends JpaRepository<CashRegister, Long> {
     Optional<CashRegister> findByAgentIdAndStatus(Long agentId, CashRegisterStatus status);
     List<CashRegister> findByAgencyIdAndStatus(Long agencyId, CashRegisterStatus status);
+    List<CashRegister> findByAgencyIdOrderByOpenedAtDesc(Long agencyId);
 }

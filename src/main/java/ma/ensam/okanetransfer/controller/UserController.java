@@ -46,11 +46,11 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER')")
     public PageResponse<UserSummaryResponse> listUsers(
-            @RequestParam(required = false) Role role,
-            @RequestParam(required = false) UserStatus status,
-            @RequestParam(required = false) Long agencyId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(name = "role", required = false) Role role,
+            @RequestParam(name = "status", required = false) UserStatus status,
+            @RequestParam(name = "agencyId", required = false) Long agencyId,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size,
             Authentication authentication
     ) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(1, Math.min(size, 100)));
@@ -75,14 +75,14 @@ public class UserController {
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public UserProfileResponse getUser(@PathVariable Long id, Authentication authentication) {
+    public UserProfileResponse getUser(@PathVariable("id") Long id, Authentication authentication) {
         return userService.getUser(id, currentUser(authentication));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public UserProfileResponse updateUser(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UserUpdateRequest request,
             Authentication authentication
     ) {
@@ -92,7 +92,7 @@ public class UserController {
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public UserSummaryResponse updateStatus(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UserStatusUpdateRequest request,
             Authentication authentication,
             HttpServletRequest servletRequest
@@ -109,7 +109,7 @@ public class UserController {
     @PatchMapping("/{id}/role")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public UserSummaryResponse updateRole(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UserRoleUpdateRequest request,
             Authentication authentication
     ) {
@@ -118,7 +118,7 @@ public class UserController {
 
     @GetMapping("/{id}/audit-logs")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public List<AuditLogResponse> auditLogs(@PathVariable Long id, Authentication authentication) {
+    public List<AuditLogResponse> auditLogs(@PathVariable("id") Long id, Authentication authentication) {
         return userService.auditLogs(id, currentUser(authentication));
     }
 

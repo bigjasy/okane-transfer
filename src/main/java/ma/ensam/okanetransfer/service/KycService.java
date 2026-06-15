@@ -203,6 +203,11 @@ public class KycService {
     private KycDocumentResponse toResponse(KycDocument document) {
         KycDocumentResponse response = new KycDocumentResponse();
         response.setId(document.getId());
+        if (document.getUser() != null) {
+            response.setUserId(document.getUser().getId());
+            response.setUserEmail(document.getUser().getEmail());
+            response.setUserName(document.getUser().getFirstName() + " " + document.getUser().getLastName());
+        }
         response.setDocumentType(document.getDocumentType());
         response.setStatus(document.getStatus());
         response.setUploadedAt(document.getUploadedAt());

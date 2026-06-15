@@ -12,7 +12,8 @@ public class WebAppInitializer extends AbstractAnnotationConfigDispatcherServlet
                 SecurityConfig.class,
                 CorsConfig.class,
                 JacksonConfig.class,
-                OpenApiConfig.class
+                OpenApiConfig.class,
+                MailConfig.class
         };
     }
 

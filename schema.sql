@@ -115,20 +115,6 @@ CREATE TABLE exchange_rates (
 );
 
 -- -----------------------------------------------------------
--- Referential: Exchange Rate History
--- -----------------------------------------------------------
-CREATE TABLE exchange_rate_histories (
-    id                      BIGSERIAL PRIMARY KEY,
-    source_currency_code    VARCHAR(3) NOT NULL,
-    target_currency_code    VARCHAR(3) NOT NULL,
-    old_rate                NUMERIC(19, 8) NOT NULL,
-    new_rate                NUMERIC(19, 8) NOT NULL,
-    source                  VARCHAR(20) NOT NULL DEFAULT 'MANUAL',
-    changed_by_id           BIGINT REFERENCES users(id),
-    changed_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- -----------------------------------------------------------
 -- Agencies
 -- -----------------------------------------------------------
 CREATE TABLE agencies (
@@ -199,7 +185,24 @@ CREATE TABLE users (
     preferred_language      VARCHAR(5) NOT NULL DEFAULT 'FR',
     created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_login_at           TIMESTAMP
+    last_login_at           TIMESTAMP,
+    notify_email_enabled    BOOLEAN NOT NULL DEFAULT TRUE,
+    notify_sms_enabled      BOOLEAN NOT NULL DEFAULT TRUE,
+    notify_push_enabled     BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- -----------------------------------------------------------
+-- Referential: Exchange Rate History
+-- -----------------------------------------------------------
+CREATE TABLE exchange_rate_histories (
+    id                      BIGSERIAL PRIMARY KEY,
+    source_currency_code    VARCHAR(3) NOT NULL,
+    target_currency_code    VARCHAR(3) NOT NULL,
+    old_rate                NUMERIC(19, 8) NOT NULL,
+    new_rate                NUMERIC(19, 8) NOT NULL,
+    source                  VARCHAR(20) NOT NULL DEFAULT 'MANUAL',
+    changed_by_id           BIGINT REFERENCES users(id),
+    changed_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- -----------------------------------------------------------
