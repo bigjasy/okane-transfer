@@ -40,13 +40,17 @@ notification.sms.enabled=false
 # Local dev only: return OTP in API response when mail/SMS is not configured
 notification.dev.expose-otp=true
 
-# SMTP (Gmail example: use an App Password, not your account password)
+# Email provider: smtp (local) or sendgrid (Render free tier — SMTP ports are blocked)
+mail.provider=smtp
 mail.host=smtp.gmail.com
 mail.port=587
 mail.username=
 mail.password=
-mail.from=OkaneTransfer <noreply@okane.ma>
+mail.from=noreply@okane.ma
 mail.starttls=true
+
+# SendGrid HTTP API (https://sendgrid.com) — required on Render free web services
+sendgrid.api.key=
 
 # Twilio SMS (https://www.twilio.com)
 twilio.account-sid=

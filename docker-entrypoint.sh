@@ -37,8 +37,20 @@ NOTIFICATION_EMAIL_ENABLED="${NOTIFICATION_EMAIL_ENABLED:-false}"
 NOTIFICATION_SMS_ENABLED="${NOTIFICATION_SMS_ENABLED:-false}"
 OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}"
 OPENROUTER_MODEL="${OPENROUTER_MODEL:-openrouter/free}"
-# Avoid angle brackets — shell treats < as input redirection
-MAIL_FROM="${MAIL_FROM:-noreply@okane.ma}"
+# smtp = local dev; sendgrid = Render free tier (SMTP ports 587/465 are blocked)
+MAIL_PROVIDER="${MAIL_PROVIDER:-smtp}"
+SENDGRID_API_KEY="${SENDGRID_API_KEY:-}"
+
+# Only override classpath mail.* when Render env vars are set (empty -D wipes application.properties)
+MAIL_JVM_OPTS=""
+if [ -n "${MAIL_HOST:-}" ]; then MAIL_JVM_OPTS="${MAIL_JVM_OPTS} -Dmail.host=${MAIL_HOST}"; fi
+if [ -n "${MAIL_PORT:-}" ]; then MAIL_JVM_OPTS="${MAIL_JVM_OPTS} -Dmail.port=${MAIL_PORT}"; fi
+if [ -n "${MAIL_USERNAME:-}" ]; then MAIL_JVM_OPTS="${MAIL_JVM_OPTS} -Dmail.username=${MAIL_USERNAME}"; fi
+if [ -n "${MAIL_PASSWORD:-}" ]; then MAIL_JVM_OPTS="${MAIL_JVM_OPTS} -Dmail.password=${MAIL_PASSWORD}"; fi
+if [ -n "${MAIL_FROM:-}" ]; then MAIL_JVM_OPTS="${MAIL_JVM_OPTS} -Dmail.from=${MAIL_FROM}"; fi
+if [ -n "${MAIL_STARTTLS:-}" ]; then MAIL_JVM_OPTS="${MAIL_JVM_OPTS} -Dmail.starttls=${MAIL_STARTTLS}"; fi
+if [ -n "${MAIL_PROVIDER:-}" ]; then MAIL_JVM_OPTS="${MAIL_JVM_OPTS} -Dmail.provider=${MAIL_PROVIDER}"; fi
+if [ -n "${SENDGRID_API_KEY:-}" ]; then MAIL_JVM_OPTS="${MAIL_JVM_OPTS} -Dsendgrid.api.key=${SENDGRID_API_KEY}"; fi
 
 mkdir -p "$KYC_UPLOAD_DIR"
 
@@ -77,12 +89,7 @@ export CATALINA_OPTS="${CATALINA_OPTS:-} \
   -Dnotification.dev.expose-otp=${NOTIFICATION_DEV_EXPOSE_OTP} \
   -Dnotification.email.enabled=${NOTIFICATION_EMAIL_ENABLED} \
   -Dnotification.sms.enabled=${NOTIFICATION_SMS_ENABLED} \
-  -Dmail.host=${MAIL_HOST:-} \
-  -Dmail.port=${MAIL_PORT:-587} \
-  -Dmail.username=${MAIL_USERNAME:-} \
-  -Dmail.password=${MAIL_PASSWORD:-} \
-  -Dmail.from=${MAIL_FROM} \
-  -Dmail.starttls=${MAIL_STARTTLS:-true} \
+  ${MAIL_JVM_OPTS} \
   -Dtwilio.account-sid=${TWILIO_ACCOUNT_SID:-} \
   -Dtwilio.auth-token=${TWILIO_AUTH_TOKEN:-} \
   -Dtwilio.from-number=${TWILIO_FROM_NUMBER:-}"
