@@ -579,7 +579,8 @@ INSERT INTO exchange_rates (source_currency_id, target_currency_id, rate, source
 ((SELECT id FROM currencies WHERE code = 'MAD'), (SELECT id FROM currencies WHERE code = 'XOF'), 61.0000, 'MANUAL', true),
 ((SELECT id FROM currencies WHERE code = 'EUR'), (SELECT id FROM currencies WHERE code = 'XOF'), 655.9570, 'MANUAL', true),
 ((SELECT id FROM currencies WHERE code = 'USD'), (SELECT id FROM currencies WHERE code = 'MAD'), 9.8500, 'MANUAL', true),
-((SELECT id FROM currencies WHERE code = 'GBP'), (SELECT id FROM currencies WHERE code = 'MAD'), 12.4500, 'MANUAL', true);
+((SELECT id FROM currencies WHERE code = 'GBP'), (SELECT id FROM currencies WHERE code = 'MAD'), 12.4500, 'MANUAL', true),
+((SELECT id FROM currencies WHERE code = 'MAD'), (SELECT id FROM currencies WHERE code = 'EUR'), 0.0920, 'MANUAL', true);
 
 -- ============================================================
 -- 7. SEED DATA: Agencies

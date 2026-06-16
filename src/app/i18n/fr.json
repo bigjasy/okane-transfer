@@ -410,8 +410,8 @@
     "fee_simulation": {
       "title": "Simulation des frais",
       "corridor_id": "ID Corridor",
-      "source_currency": "MAD",
-      "target_currency": "EUR",
+      "source_currency": "Devise source",
+      "target_currency": "Devise cible",
       "amount": "Montant",
       "simulate": "Simuler",
       "fees": "Frais",

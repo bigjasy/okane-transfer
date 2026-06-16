@@ -378,8 +378,8 @@
     "fee_simulation": {
       "title": "محاكاة الرسوم",
       "corridor_id": "معرف الممر",
-      "source_currency": "MAD",
-      "target_currency": "EUR",
+      "source_currency": "العملة المصدر",
+      "target_currency": "العملة الهدف",
       "amount": "المبلغ",
       "simulate": "محاكاة",
       "fees": "الرسوم",

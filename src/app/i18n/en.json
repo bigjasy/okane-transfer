@@ -427,8 +427,8 @@
     "fee_simulation": {
       "title": "Fee simulation",
       "corridor_id": "Corridor ID",
-      "source_currency": "MAD",
-      "target_currency": "EUR",
+      "source_currency": "Source currency",
+      "target_currency": "Target currency",
       "amount": "Amount",
       "simulate": "Simulate",
       "fees": "Fees",
