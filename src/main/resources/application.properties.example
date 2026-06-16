@@ -19,8 +19,9 @@ hibernate.format-sql=true
 aes.key=
 # JWT signing secret (min 32 bytes); empty = auto-generated on each restart
 jwt.secret=
-# Google Gemini API key for chatbot (get one at https://aistudio.google.com/apikey)
-gemini.api.key=
+# OpenRouter API key for chatbot (get one at https://openrouter.ai/keys)
+openrouter.api.key=
+openrouter.model=openrouter/free
 
 # Production frontend build (served from same host as Tomcat):
 #   npm run build -- --configuration=production

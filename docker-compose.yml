@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: okane-postgres
+    environment:
+      POSTGRES_DB: okane_transfer
+      POSTGRES_USER: okane
+      POSTGRES_PASSWORD: okane
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./seed_users.sql:/docker-entrypoint-initdb.d/02-seed.sql
+
+volumes:
+  pgdata:
