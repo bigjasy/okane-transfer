@@ -20,13 +20,14 @@ import { clearTwoFactorSession, saveTwoFactorSession } from '../../../core/const
     <button class="btn primary" type="submit" [disabled]="loading">{{ loading ? 'Connexion...' : 'Se connecter' }}</button>
   </form>
   <small>Comptes test: admin@okane.ma, manager@okane.ma, agent@okane.ma, client@okane.ma / Password@123</small>
+  <a routerLink="/">Retour au site</a>
   <a routerLink="/auth/register">Creer un compte client</a>
 </div>`,
   styles: [`
     .login { width: min(460px, 100%); display: grid; gap: 1rem; }
     .login h1 { margin: 0; font-size: 2rem; }
     .login p { margin: 0; color: #64748b; }
-    a { color: #1d4ed8; font-weight: 800; }
+    a { color: #1d4ed8; font-weight: 800; display: block; margin-top: .5rem; }
   `]
 })
 export class LoginComponent {

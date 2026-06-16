@@ -10,7 +10,7 @@ import { ClientRegisterRequest } from '../../../core/models/auth.models';
 <form (ngSubmit)="submit()" class="form-grid">
 <label class="field">Prénom<input name="firstName" [(ngModel)]="form.firstName"></label><label class="field">Nom<input name="lastName" [(ngModel)]="form.lastName"></label><label class="field">Email<input name="email" [(ngModel)]="form.email"></label><label class="field">Téléphone<input name="phoneNumber" [(ngModel)]="form.phoneNumber"></label>
 <label class="field">Pays<select name="countryId" [(ngModel)]="form.countryId"><option [ngValue]="null" disabled>Choisir un pays</option>@for(c of countries;track c.id){<option [ngValue]="c.id">{{c.name}}</option>}</select></label>
-<label class="field">Mot de passe<input name="password" type="password" [(ngModel)]="form.password"></label><button class="btn primary">Créer</button><a routerLink="/auth/login" class="btn">Retour</a></form></div>`, styles:[`.reg{width:min(760px,100%)}`] })
+<label class="field">Mot de passe<input name="password" type="password" [(ngModel)]="form.password"></label><button class="btn primary">Créer</button><a routerLink="/auth/login" class="btn">Connexion</a><a routerLink="/">Retour au site</a></form></div>`, styles:[`.reg{width:min(760px,100%)}`] })
 export class RegisterComponent implements OnInit {
   done=false;
   countries: CountryResponse[] = [];

@@ -5,7 +5,7 @@ import { PublicLayoutComponent } from './layouts/public-layout/public-layout.com
 import { SecuredLayoutComponent } from './layouts/secured-layout/secured-layout.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
+  { path: '', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent) },
   { path: 'auth', component: PublicLayoutComponent, children: [
     { path: 'login', loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent) },
     { path: 'register', loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent) },
@@ -57,5 +57,5 @@ export const routes: Routes = [
   { path: 'notifications', component: SecuredLayoutComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_AGENT', 'ROLE_CLIENT'] }, children: [
     { path: '', loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent) }
   ]},
-  { path: '**', redirectTo: 'auth/login' }
+  { path: '**', redirectTo: '' }
 ];

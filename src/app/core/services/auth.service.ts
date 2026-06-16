@@ -38,7 +38,7 @@ export class AuthService {
       this.api.post('/auth/logout', { refreshToken }).pipe(catchError(() => [])).subscribe();
     }
     this.tokens.clear();
-    this.router.navigateByUrl('/auth/login');
+    this.router.navigateByUrl('/');
   }
   redirectByRole(user: UserSummaryResponse): void {
     const target = user.role === 'ROLE_ADMIN' ? '/admin/dashboard' : user.role === 'ROLE_MANAGER' ? '/manager/dashboard' : user.role === 'ROLE_AGENT' ? '/agent/dashboard' : '/client/dashboard';
