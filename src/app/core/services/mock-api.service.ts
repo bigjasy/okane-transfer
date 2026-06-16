@@ -95,7 +95,14 @@ export class MockApiService {
   dashboard(role: string): Observable<any> { return of({ totalVolume: 1245000, transferCount: 342, totalFees: 24550, totalCommissions: 13300, charts: { months: [90, 120, 170, 220, 300, 342], status: [120, 60, 30, 132] }, role }).pipe(delay(250)); }
   getUsers(): Observable<UserSummaryResponse[]> { return of([...this.users]).pipe(delay(200)); }
   createUser(body: UserCreateRequest): Observable<UserSummaryResponse> { const u: UserSummaryResponse = { id: Date.now(), email: body.email, fullName: `${body.firstName} ${body.lastName}`, role: body.role, status: 'ACTIVE', agencyName: body.agencyId ? 'Marrakech Centre' : '' }; this.users.push(u); return of(u).pipe(delay(200)); }
-  updateUserStatus(id: number, body: UserStatusUpdateRequest): Observable<UserSummaryResponse> { const u = this.users.find(x => x.id === id)!; u.status = body.status; return of(u).pipe(delay(150)); }
+  updateUserStatus(id: number, body: UserStatusUpdateRequest): Observable<UserSummaryResponse> {
+    const user = this.users.find(item => item.id === id);
+    if (!user) return throwError(() => ({ status: 404, message: `Mock user ${id} not found` }));
+
+    const updated: UserSummaryResponse = { ...user, status: body.status };
+    this.users = this.users.map(item => item.id === id ? updated : item);
+    return of(updated).pipe(delay(150));
+  }
   getCountries(): Observable<CountryResponse[]> { return of(this.countries).pipe(delay(200)); }
   getCurrencies(): Observable<CurrencyResponse[]> { return of(this.currencies).pipe(delay(200)); }
   getExchangeRates(): Observable<ExchangeRateResponse[]> { const rates: ExchangeRateResponse[] = [{ id: 1, sourceCurrency: 'MAD', targetCurrency: 'EUR', rate: 0.092, source: 'MANUAL', validFrom: new Date().toISOString(), active: true }]; return of(rates).pipe(delay(200)); }

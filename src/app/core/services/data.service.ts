@@ -100,7 +100,15 @@ export class DataService {
     );
   }
   createUser(body: UserCreateRequest): Observable<UserSummaryResponse> { return this.useMock() ? this.mock.createUser(body) : this.fallback(this.api.post<UserSummaryResponse>('/users', body), this.mock.createUser(body)); }
-  updateUserStatus(id: number, status: UserStatus): Observable<UserSummaryResponse> { return this.useMock() ? this.mock.updateUserStatus(id, { status }) : this.fallback(this.api.patch<UserSummaryResponse>(`/users/${id}/status`, { status }), this.mock.updateUserStatus(id, { status } as UserStatusUpdateRequest)); }
+  updateUserStatus(id: number, status: UserStatus): Observable<UserSummaryResponse> {
+    const body: UserStatusUpdateRequest = { status };
+    if (this.useMock()) return this.mock.updateUserStatus(id, body);
+
+    const request$ = this.api.patch<UserSummaryResponse>(`/users/${id}/status`, body);
+    return environment.allowMockFallback
+      ? request$.pipe(catchError(err => { console.warn('Backend indisponible, fallback mock:', err); return this.mock.updateUserStatus(id, body); }))
+      : request$;
+  }
   countries(): Observable<CountryResponse[]> { return this.useMock() ? this.mock.getCountries() : this.fallback(this.api.get<CountryResponse[]>('/countries'), this.mock.getCountries()); }
   createCountry(body: CountryRequest): Observable<CountryResponse> {
     return this.api.post<CountryResponse | ApiResponse<CountryResponse>>('/countries', body).pipe(map(r => this.unwrap(r)));
