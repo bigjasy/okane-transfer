@@ -28,9 +28,9 @@ services:
         value: "false"
       - key: NOTIFICATION_EMAIL_ENABLED
         value: "false"
-      # After first deploy: set to your frontend URL, e.g. https://okane-frontend.onrender.com
+      # Must match your static site URL exactly (https, no trailing slash)
       - key: CORS_ALLOWED_ORIGINS
-        sync: false
+        value: "https://okane-frontend.onrender.com"
       - key: OPENROUTER_API_KEY
         sync: false
 
