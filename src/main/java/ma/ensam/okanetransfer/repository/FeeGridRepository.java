@@ -23,6 +23,15 @@ public interface FeeGridRepository extends JpaRepository<FeeGrid, Long> {
                                      @Param("amount") BigDecimal amount, 
                                      @Param("date") LocalDate date);
 
+    @Query("SELECT f FROM FeeGrid f WHERE f.sourceCurrency.code = :sourceCode " +
+           "AND f.targetCurrency.code = :targetCode AND f.active = true " +
+           "AND :amount >= f.minAmount AND :amount <= f.maxAmount " +
+           "AND :date >= f.validFrom AND (f.validTo IS NULL OR :date <= f.validTo)")
+    Optional<FeeGrid> findActiveGridByCurrencies(@Param("sourceCode") String sourceCode,
+                                                  @Param("targetCode") String targetCode,
+                                                  @Param("amount") BigDecimal amount,
+                                                  @Param("date") LocalDate date);
+
     Page<FeeGrid> findByCorridorId(Long corridorId, Pageable pageable);
 
     @Query("SELECT COUNT(f) > 0 FROM FeeGrid f WHERE f.corridor.id = :corridorId " +

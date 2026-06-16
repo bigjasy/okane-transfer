@@ -580,7 +580,12 @@ INSERT INTO exchange_rates (source_currency_id, target_currency_id, rate, source
 ((SELECT id FROM currencies WHERE code = 'EUR'), (SELECT id FROM currencies WHERE code = 'XOF'), 655.9570, 'MANUAL', true),
 ((SELECT id FROM currencies WHERE code = 'USD'), (SELECT id FROM currencies WHERE code = 'MAD'), 9.8500, 'MANUAL', true),
 ((SELECT id FROM currencies WHERE code = 'GBP'), (SELECT id FROM currencies WHERE code = 'MAD'), 12.4500, 'MANUAL', true),
-((SELECT id FROM currencies WHERE code = 'MAD'), (SELECT id FROM currencies WHERE code = 'EUR'), 0.0920, 'MANUAL', true);
+((SELECT id FROM currencies WHERE code = 'MAD'), (SELECT id FROM currencies WHERE code = 'EUR'), 0.0920, 'MANUAL', true),
+((SELECT id FROM currencies WHERE code = 'XOF'), (SELECT id FROM currencies WHERE code = 'MAD'), 0.0164, 'MANUAL', true),
+((SELECT id FROM currencies WHERE code = 'XOF'), (SELECT id FROM currencies WHERE code = 'EUR'), 0.0015, 'MANUAL', true),
+((SELECT id FROM currencies WHERE code = 'MAD'), (SELECT id FROM currencies WHERE code = 'USD'), 0.1015, 'MANUAL', true),
+((SELECT id FROM currencies WHERE code = 'MAD'), (SELECT id FROM currencies WHERE code = 'GBP'), 0.0803, 'MANUAL', true),
+((SELECT id FROM currencies WHERE code = 'EUR'), (SELECT id FROM currencies WHERE code = 'MAD'), 10.8696, 'MANUAL', true);
 
 -- ============================================================
 -- 7. SEED DATA: Agencies
@@ -600,7 +605,8 @@ INSERT INTO corridors (source_country_id, destination_country_id, active, daily_
 ((SELECT id FROM countries WHERE iso_code = 'MA'), (SELECT id FROM countries WHERE iso_code = 'CI'), true, 100000.00, 2000000.00),
 ((SELECT id FROM countries WHERE iso_code = 'FR'), (SELECT id FROM countries WHERE iso_code = 'MA'), true, 500000.00, 5000000.00),
 ((SELECT id FROM countries WHERE iso_code = 'US'), (SELECT id FROM countries WHERE iso_code = 'MA'), true, 300000.00, 3000000.00),
-((SELECT id FROM countries WHERE iso_code = 'FR'), (SELECT id FROM countries WHERE iso_code = 'SN'), true, 200000.00, 2000000.00);
+((SELECT id FROM countries WHERE iso_code = 'FR'), (SELECT id FROM countries WHERE iso_code = 'SN'), true, 200000.00, 2000000.00),
+((SELECT id FROM countries WHERE iso_code = 'MA'), (SELECT id FROM countries WHERE iso_code = 'FR'), true, 100000.00, 2000000.00);
 
 -- ============================================================
 -- 9. SEED DATA: Fee Grids
@@ -619,7 +625,14 @@ INSERT INTO fee_grids (corridor_id, source_currency_id, target_currency_id, min_
  0, 1000, 5.00, 0.015, 0.40, 0.60, '2025-01-01', true),
 ((SELECT c.id FROM corridors c JOIN countries src ON c.source_country_id = src.id JOIN countries dst ON c.destination_country_id = dst.id WHERE src.iso_code = 'FR' AND dst.iso_code = 'MA'),
  (SELECT id FROM currencies WHERE code = 'EUR'), (SELECT id FROM currencies WHERE code = 'MAD'),
- 1000, 10000, 3.00, 0.01, 0.45, 0.55, '2025-01-01', true);
+ 1000, 10000, 3.00, 0.01, 0.45, 0.55, '2025-01-01', true),
+-- Corridor MA -> FR (MAD -> EUR)
+((SELECT c.id FROM corridors c JOIN countries src ON c.source_country_id = src.id JOIN countries dst ON c.destination_country_id = dst.id WHERE src.iso_code = 'MA' AND dst.iso_code = 'FR'),
+ (SELECT id FROM currencies WHERE code = 'MAD'), (SELECT id FROM currencies WHERE code = 'EUR'),
+ 0, 5000, 30.00, 0.025, 0.35, 0.65, '2025-01-01', true),
+((SELECT c.id FROM corridors c JOIN countries src ON c.source_country_id = src.id JOIN countries dst ON c.destination_country_id = dst.id WHERE src.iso_code = 'MA' AND dst.iso_code = 'FR'),
+ (SELECT id FROM currencies WHERE code = 'MAD'), (SELECT id FROM currencies WHERE code = 'EUR'),
+ 5000, 20000, 20.00, 0.02, 0.40, 0.60, '2025-01-01', true);
 
 -- ============================================================
 -- End of Schema

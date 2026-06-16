@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public class FeeSimulationRequest {
-    @NotNull(message = "L'ID du corridor est obligatoire")
     private Long corridorId;
 
     @NotBlank(message = "La devise source est obligatoire")

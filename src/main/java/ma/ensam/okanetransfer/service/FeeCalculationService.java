@@ -31,8 +31,15 @@ public class FeeCalculationService {
         BigDecimal amount = request.getAmount();
 
         // 1. Récupération de la grille tarifaire active
-        FeeGrid grid = feeGridRepository.findActiveGrid(request.getCorridorId(), amount, LocalDate.now())
-                .orElseThrow(() -> new BusinessException("Aucune grille tarifaire active trouvée pour ce montant et ce corridor."));
+        FeeGrid grid;
+        if (request.getCorridorId() != null) {
+            grid = feeGridRepository.findActiveGrid(request.getCorridorId(), amount, LocalDate.now())
+                    .orElseThrow(() -> new BusinessException("Aucune grille tarifaire active trouvée pour ce montant et ce corridor."));
+        } else {
+            grid = feeGridRepository.findActiveGridByCurrencies(
+                    request.getSourceCurrency(), request.getTargetCurrency(), amount, LocalDate.now())
+                    .orElseThrow(() -> new BusinessException("Aucune grille tarifaire active trouvée pour ce montant et ces devises."));
+        }
 
         // 2. Récupération du taux de change actif
         // On suppose que M3 a créé une méthode findActiveRate dans ExchangeRateRepository
