@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../../core/services/data.service';
 import { I18nService } from '../../../core/services/i18n.service';
-import { ExchangeRateHistoryResponse } from '../../../core/models/referential.models';
 import { ExchangeRateSyncResponse } from '../../../core/models/compliance.models';
 
 @Component({
@@ -63,35 +62,7 @@ import { ExchangeRateSyncResponse } from '../../../core/models/compliance.models
     </div>
   </div>
 
-  <div class="card table-wrap">
-    <h3>{{ t('admin.exchange_rates.history') }}</h3>
-    @if (history.length === 0) {
-      <p class="muted">{{ t('admin.exchange_rates.history_empty') }}</p>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>{{ t('admin.exchange_rates.source') }}</th>
-            <th>{{ t('admin.exchange_rates.target') }}</th>
-            <th>{{ t('admin.exchange_rates.old_rate') }}</th>
-            <th>{{ t('admin.exchange_rates.rate') }}</th>
-            <th>{{ t('admin.exchange_rates.changed_at') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of history; track item.id) {
-            <tr>
-              <td>{{ item.sourceCurrencyCode }}</td>
-              <td>{{ item.targetCurrencyCode }}</td>
-              <td>{{ item.oldRate ?? '—' }}</td>
-              <td>{{ item.newRate }}</td>
-              <td>{{ item.changedAt }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </div>
+
 </section>`,
   styles: [`
     .page-header {
@@ -107,7 +78,6 @@ import { ExchangeRateSyncResponse } from '../../../core/models/compliance.models
 })
 export class ExchangeRatesComponent implements OnInit {
   rates: any[] = [];
-  history: ExchangeRateHistoryResponse[] = [];
   conv = { sourceCurrency: 'MAD', targetCurrency: 'EUR', amount: 1000 };
   result: any;
   syncLoading = false;
@@ -117,7 +87,6 @@ export class ExchangeRatesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadRates();
-    this.loadHistory();
   }
 
   convert(): void {
@@ -132,7 +101,6 @@ export class ExchangeRatesComponent implements OnInit {
         this.syncMessage = `${response.provider}: ${response.updatedCount} rate(s) updated`;
         this.syncLoading = false;
         this.loadRates();
-        this.loadHistory();
       },
       error: () => {
         this.syncMessage = this.t('admin.exchange_rates.sync_error');
@@ -147,9 +115,5 @@ export class ExchangeRatesComponent implements OnInit {
 
   private loadRates(): void {
     this.data.rates().subscribe(x => this.rates = x);
-  }
-
-  private loadHistory(): void {
-    this.data.exchangeRateHistory('MAD', 'EUR').subscribe(items => this.history = items);
   }
 }

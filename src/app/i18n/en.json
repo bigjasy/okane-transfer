@@ -216,11 +216,7 @@
       "sync_external": "Sync external rates",
       "syncing": "Syncing...",
       "sync_error": "Unable to sync external rates.",
-      "active_rates": "Active rates",
-      "history": "Rate history",
-      "history_empty": "No history yet for this pair.",
-      "old_rate": "Previous",
-      "changed_at": "Changed at"
+      "active_rates": "Active rates"
     },
     "compliance": {
       "title": "KYC / AML Compliance",

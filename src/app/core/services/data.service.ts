@@ -6,7 +6,7 @@ import { MockApiService } from './mock-api.service';
 import { ApiResponse, BackendPage, PageResponse } from '../models/common.models';
 import { UserCreateRequest, UserProfileResponse, UserStatusUpdateRequest, UserSummaryResponse, UserUpdateRequest } from '../models/user.models';
 import { AgencyRequest, AgencyResponse, AgencyStaffResponse, CorridorRequest, CorridorResponse, FeeGridRequest, FeeGridResponse, FeeSimulationRequest, FeeSimulationResponse } from '../models/agency.models';
-import { ConversionRequest, ConversionResponse, CountryRequest, CountryResponse, CurrencyResponse, ExchangeRateHistoryResponse, ExchangeRateResponse } from '../models/referential.models';
+import { ConversionRequest, ConversionResponse, CountryRequest, CountryResponse, CurrencyResponse, ExchangeRateResponse } from '../models/referential.models';
 import { AmlAlertResponse, AmlReviewRequest, ComplianceSummaryResponse, KycDocumentResponse, KycDocumentUploadRequest, KycReviewRequest } from '../models/compliance.models';
 import { TransferCreateRequest, TransferResponse, PayoutConfirmRequest, PayoutReceiptResponse, PayoutResponse, PayoutSearchRequest, PayoutSearchResponse, PayoutValidateRequest, PayoutValidateResponse, BeneficiaryRequest, BeneficiaryResponse, TransferTrackingResponse } from '../models/transfer.models';
 import { CashClosingRequest, CashMovementRequest, CashMovementResponse, CashRegisterOpenRequest, CashRegisterResponse, CommissionResponse } from '../models/finance.models';
@@ -122,15 +122,6 @@ export class DataService {
   }
   rates(): Observable<ExchangeRateResponse[]> { return this.useMock() ? this.mock.getExchangeRates() : this.fallback(this.api.get<ExchangeRateResponse[]>('/exchange-rates'), this.mock.getExchangeRates()); }
   convert(body: ConversionRequest): Observable<ConversionResponse> { return this.useMock() ? this.mock.convertCurrency(body) : this.fallback(this.api.post<ConversionResponse>('/exchange-rates/convert', body), this.mock.convertCurrency(body)); }
-  exchangeRateHistory(source?: string, target?: string): Observable<ExchangeRateHistoryResponse[]> {
-    const params: Record<string, string> = {};
-    if (source) params['source'] = source;
-    if (target) params['target'] = target;
-    return this.useMock() ? of([]) : this.fallback(
-      this.api.get<ExchangeRateHistoryResponse[]>('/exchange-rates/history', params),
-      of([])
-    );
-  }
   syncExternalRates(): Observable<import('../models/compliance.models').ExchangeRateSyncResponse> {
     return this.useMock() ? of({ provider: 'MockFX', source: 'EXTERNAL_API', syncedAt: new Date().toISOString(), updatedCount: 0, rates: [] }) : this.fallback(
       this.api.post<import('../models/compliance.models').ExchangeRateSyncResponse>('/exchange-rates/sync-external', {}),
