@@ -1,0 +1,10 @@
+target/
+node_modules/
+dist/
+.angular/
+.git/
+.idea/
+*.iml
+src/main/resources/application.properties
+PROJECT_REPORT.md
+scripts/prefetch-test-deps.ps1
