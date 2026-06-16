@@ -23,7 +23,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: INIT_DB
-        value: "true"
+        value: "false"
       - key: NOTIFICATION_DEV_EXPOSE_OTP
         value: "false"
       - key: NOTIFICATION_EMAIL_ENABLED

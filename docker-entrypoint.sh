@@ -37,13 +37,22 @@ NOTIFICATION_EMAIL_ENABLED="${NOTIFICATION_EMAIL_ENABLED:-false}"
 NOTIFICATION_SMS_ENABLED="${NOTIFICATION_SMS_ENABLED:-false}"
 OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}"
 OPENROUTER_MODEL="${OPENROUTER_MODEL:-openrouter/free}"
+# Avoid angle brackets — shell treats < as input redirection
+MAIL_FROM="${MAIL_FROM:-noreply@okane.ma}"
 
 mkdir -p "$KYC_UPLOAD_DIR"
 
 if [ "${INIT_DB:-false}" = "true" ] && [ -n "${DATABASE_URL:-}" ]; then
-  echo "Running database init (schema + seed)..."
-  psql "$DATABASE_URL" -v ON_ERROR_STOP=0 -f /app/db/schema.sql
-  psql "$DATABASE_URL" -v ON_ERROR_STOP=0 -f /app/db/seed_users.sql
+  USERS_TABLE=$(psql "$DATABASE_URL" -tAc "SELECT to_regclass('public.users') IS NOT NULL" 2>/dev/null || echo "f")
+  if [ "$USERS_TABLE" != "t" ]; then
+    echo "Fresh database — running schema + seed..."
+    set +e
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=0 -f /app/db/schema.sql
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=0 -f /app/db/seed_users.sql
+    set -e
+  else
+    echo "Database already initialized — skipping schema/seed."
+  fi
 fi
 
 # Tomcat listens on Render PORT
@@ -72,7 +81,7 @@ export CATALINA_OPTS="${CATALINA_OPTS:-} \
   -Dmail.port=${MAIL_PORT:-587} \
   -Dmail.username=${MAIL_USERNAME:-} \
   -Dmail.password=${MAIL_PASSWORD:-} \
-  -Dmail.from=${MAIL_FROM:-OkaneTransfer <noreply@okane.ma>} \
+  -Dmail.from=${MAIL_FROM} \
   -Dmail.starttls=${MAIL_STARTTLS:-true} \
   -Dtwilio.account-sid=${TWILIO_ACCOUNT_SID:-} \
   -Dtwilio.auth-token=${TWILIO_AUTH_TOKEN:-} \
